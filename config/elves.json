@@ -1,9 +1,9 @@
 {
   "elves": [
-    {"name": "精灵A", "template": "elves/elf_1.png", "role": "sacrifice"},
-    {"name": "精灵B", "template": "elves/elf_2.png", "role": "sacrifice"},
-    {"name": "精灵C", "template": "elves/elf_3.png", "role": "final"},
-    {"name": "精灵D", "template": "elves/elf_4.png", "role": "reserve"}
+    {"name": "幽影树", "template": ["elves/tree3.png", "elves/tree3_lineup.png"], "role": "final"},
+    {"name": "獠牙猪", "template": "elves/pig3.png", "role": "sacrifice"},
+    {"name": "獭", "template": "elves/otter2.png", "role": "sacrifice"},
+    {"name": "权杖", "template": "elves/scepter3.png", "role": "reserve"}
   ],
   "final_action": "energy"
 }

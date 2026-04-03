@@ -1,6 +1,6 @@
 """游戏控制器 - 封装 win_util"""
 from pathlib import Path
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Union
 import time
 
 from loguru import logger
@@ -30,8 +30,8 @@ class GameController:
         """获取当前截图"""
         return self.win.image_finder.screenshot_cache
 
-    def find_image(self, template_path: str, similarity: float = None) -> Tuple[int, int]:
-        """在截图缓存中查找图像
+    def _find_single_image(self, template_path: str, similarity: float = None) -> Tuple[int, int]:
+        """查找单个模板图像
 
         Args:
             template_path: 相对于 TEMPLATE_BASE 的路径
@@ -42,9 +42,6 @@ class GameController:
         """
         sim = similarity or self._similarity
         full_path = self.TEMPLATE_BASE / template_path
-
-        # 更新截图
-        self.capture()
 
         result = self.win.image_finder.bg_find_pic_by_cache(
             str(full_path),
@@ -58,13 +55,35 @@ class GameController:
         logger.debug(f"图像找到: {template_path} @ {result}")
         return result
 
+    def find_image(self, template, similarity: float = None) -> Tuple[int, int]:
+        """在截图缓存中查找图像
+
+        Args:
+            template: 相对于 TEMPLATE_BASE 的路径，支持单字符串或字符串列表
+            similarity: 相似度阈值
+
+        Returns:
+            (x, y) 坐标，未找到返回 (-1, -1)
+        """
+        # 更新截图
+        self.capture()
+
+        # 兼容单字符串和列表
+        templates = [template] if isinstance(template, str) else template
+
+        for t in templates:
+            pos = self._find_single_image(t, similarity)
+            if pos != (-1, -1):
+                return pos
+        return -1, -1
+
     def find_image_with_timeout(
-        self, template_path: str, timeout: float = 5, similarity: float = None
+        self, template, timeout: float = 5, similarity: float = None
     ) -> Optional[Tuple[int, int]]:
         """等待图像出现
 
         Args:
-            template_path: 模板路径
+            template: 模板路径，支持单字符串或字符串列表
             timeout: 超时时间（秒）
             similarity: 相似度
 
@@ -73,25 +92,25 @@ class GameController:
         """
         start = time.time()
         while time.time() - start < timeout:
-            pos = self.find_image(template_path, similarity)
+            pos = self.find_image(template, similarity)
             if pos != (-1, -1):
                 return pos
             time.sleep(0.3)
         return None
 
     def wait_for_image_disappear(
-        self, template_path: str, timeout: float = 5, similarity: float = None
+        self, template: Union[str, List[str]], timeout: float = 5, similarity: float = None
     ) -> bool:
         """等待图像消失"""
         start = time.time()
         while time.time() - start < timeout:
-            pos = self.find_image(template_path, similarity)
+            pos = self.find_image(template, similarity)
             if pos == (-1, -1):
                 return True
             time.sleep(0.3)
         return False
 
-    def click_at(self, x: int, y: int, x_range: int = 20, y_range: int = 20) -> bool:
+    def click_at(self, x: int, y: int, x_range: int = 10, y_range: int = 10) -> bool:
         """在指定位置点击（前台点击）"""
         # 添加随机偏移模拟人工点击
         import random
@@ -99,27 +118,27 @@ class GameController:
         offset_y = random.randint(-y_range, y_range) if y_range > 0 else 0
         return left_click((x + offset_x, y + offset_y))
 
-    def find_and_click(self, template_path: str, similarity: float = None) -> bool:
+    def find_and_click(self, template: Union[str, List[str]], similarity: float = None) -> bool:
         """查找图像并点击（立即返回）"""
-        pos = self.find_image(template_path, similarity)
+        pos = self.find_image(template, similarity)
         if pos == (-1, -1):
             return False
         return self.click_at(*pos)
 
     def find_and_click_with_timeout(
-        self, template_path: str, timeout: float = 5, similarity: float = None
+        self, template: Union[str, List[str]], timeout: float = 5, similarity: float = None
     ) -> bool:
         """等待图像出现后点击
 
         Args:
-            template_path: 模板路径
+            template: 模板路径，支持单字符串或字符串列表
             timeout: 超时时间（秒）
             similarity: 相似度阈值
 
         Returns:
             是否成功找到并点击
         """
-        pos = self.find_image_with_timeout(template_path, timeout=timeout, similarity=similarity)
+        pos = self.find_image_with_timeout(template, timeout=timeout, similarity=similarity)
         if pos is None:
             return False
         return self.click_at(*pos)

@@ -74,17 +74,24 @@ class ElfManager:
         """在切换精灵面板中查找精灵位置
 
         Args:
-            elf: 精灵配置 dict
+            elf: 精灵配置 dict，template 支持单字符串或字符串数组
 
         Returns:
             (x, y) 或 None
         """
-        template = elf["template"]
-        pos = self.controller.find_image(template, similarity=0.8)
-        if pos == (-1, -1):
-            logger.warning(f"未找到精灵: {elf['name']} ({template})")
-            return None
-        return pos
+        templates = elf["template"]
+        # 兼容单字符串和数组两种配置方式
+        if isinstance(templates, str):
+            templates = [templates]
+
+        for template in templates:
+            pos = self.controller.find_image(template, similarity=0.8)
+            if pos != (-1, -1):
+                logger.debug(f"找到精灵: {elf['name']} ({template}) @ {pos}")
+                return pos
+
+        logger.warning(f"未找到精灵: {elf['name']} (尝试了 {templates})")
+        return None
 
     def get_sacrifice_order(self, faster: bool) -> List[Dict]:
         """获取送死顺序
