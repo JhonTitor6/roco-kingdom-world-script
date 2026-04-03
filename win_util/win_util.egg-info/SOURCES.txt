@@ -1,0 +1,7 @@
+README.md
+pyproject.toml
+win_util.egg-info/PKG-INFO
+win_util.egg-info/SOURCES.txt
+win_util.egg-info/dependency_links.txt
+win_util.egg-info/requires.txt
+win_util.egg-info/top_level.txt
