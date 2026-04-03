@@ -39,8 +39,8 @@ class BattleFlow:
         # 2. 检查精灵数不足弹窗
         insufficient_pos = self.ctrl.find_image_with_timeout("popup/insufficient.png", timeout=3, similarity=0.8)
         if insufficient_pos is not None:
-            logger.info("检测到精灵数不足弹窗，点击确认")
-            self.ctrl.click_at(*insufficient_pos)
+            logger.info("检测到精灵数不足弹窗，点击确认按钮")
+            self.ctrl.find_and_click_with_timeout("popup/confirm.png", timeout=3)
             time.sleep(0.3)
 
         # 3. 选择首发精灵（final 精灵）- select_first_elf 已内置 timeout
