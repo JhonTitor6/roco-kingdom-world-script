@@ -95,9 +95,27 @@ class GameController:
         return self.win.mouse.bg_left_click((x, y), x_range=x_range, y_range=y_range)
 
     def find_and_click(self, template_path: str, similarity: float = None) -> bool:
-        """查找图像并点击"""
+        """查找图像并点击（立即返回）"""
         pos = self.find_image(template_path, similarity)
         if pos == (-1, -1):
+            return False
+        return self.click_at(*pos)
+
+    def find_and_click_with_timeout(
+        self, template_path: str, timeout: float = 5, similarity: float = None
+    ) -> bool:
+        """等待图像出现后点击
+
+        Args:
+            template_path: 模板路径
+            timeout: 超时时间（秒）
+            similarity: 相似度阈值
+
+        Returns:
+            是否成功找到并点击
+        """
+        pos = self.find_image_with_timeout(template_path, timeout=timeout, similarity=similarity)
+        if pos is None:
             return False
         return self.click_at(*pos)
 

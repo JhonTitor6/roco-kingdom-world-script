@@ -31,26 +31,24 @@ class BattleFlow:
         """
         timeouts = self.settings["timeouts"]
 
-        # 1. 点击开始挑战
-        if not self.ctrl.find_and_click("battle/start_challenge.png"):
+        # 1. 点击开始挑战，等待下一画面出现
+        if not self.ctrl.find_and_click_with_timeout("battle/start_challenge.png", timeout=5):
             logger.warning("未找到「开始挑战」按钮")
             return False
-        time.sleep(0.5)
 
         # 2. 检查精灵数不足弹窗
-        insufficient_pos = self.ctrl.find_image("popup/insufficient.png", similarity=0.8)
-        if insufficient_pos != (-1, -1):
+        insufficient_pos = self.ctrl.find_image_with_timeout("popup/insufficient.png", timeout=3, similarity=0.8)
+        if insufficient_pos is not None:
             logger.info("检测到精灵数不足弹窗，点击确认")
             self.ctrl.click_at(*insufficient_pos)
             time.sleep(0.3)
 
-        # 3. 选择首发精灵（final 精灵）
+        # 3. 选择首发精灵（final 精灵）- select_first_elf 已内置 timeout
         if not self.skill.select_first_elf(self.elf_mgr.final_elf):
             logger.error("选择首发精灵失败")
             return False
-        time.sleep(0.3)
 
-        # 4. 确认首发
+        # 4. 确认首发 - confirm_selection 已内置 timeout
         if not self.skill.confirm_selection():
             logger.error("确认首发失败")
             return False
@@ -229,13 +227,14 @@ class BattleFlow:
 
         logger.info("战斗结束")
 
-        # 点击再次切磋
-        if self.ctrl.find_and_click("battle/retry.png"):
+        # 点击再次切磋，等待下一画面出现
+        if self.ctrl.find_and_click_with_timeout("battle/retry.png", timeout=3):
             time.sleep(0.5)
             # 检测对方不想切磋
-            if self.ctrl.find_image("battle/quit.png", similarity=0.8) != (-1, -1):
+            quit_pos = self.ctrl.find_image_with_timeout("battle/quit.png", timeout=2, similarity=0.8)
+            if quit_pos is not None:
                 logger.info("对方不想切磋，点击退出")
-                self.ctrl.find_and_click("battle/quit.png")
+                self.ctrl.find_and_click_with_timeout("battle/quit.png", timeout=2)
                 time.sleep(0.5)
             return True
 

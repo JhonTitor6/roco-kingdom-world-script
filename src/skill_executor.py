@@ -56,13 +56,15 @@ class SkillExecutor:
         Returns:
             是否成功
         """
-        # 按 E 打开切换面板
+        # 按 E 打开切换面板，等待面板出现
         self.ctrl.press_key('E')
-        time.sleep(0.5)
+        if not self.wait_for_switch_panel(timeout=3):
+            logger.warning("切换面板未出现")
+            return False
 
         # 识图查找目标精灵
-        pos = self.ctrl.find_image(elf["template"], similarity=0.8)
-        if pos == (-1, -1):
+        pos = self.ctrl.find_image_with_timeout(elf["template"], timeout=3, similarity=0.8)
+        if pos is None:
             logger.warning(f"切换精灵失败: {elf['name']}")
             self.ctrl.press_key('E')  # 关闭面板
             return False
@@ -80,8 +82,8 @@ class SkillExecutor:
         Returns:
             是否成功
         """
-        pos = self.ctrl.find_image(elf["template"], similarity=0.8)
-        if pos == (-1, -1):
+        pos = self.ctrl.find_image_with_timeout(elf["template"], timeout=5, similarity=0.8)
+        if pos is None:
             logger.warning(f"选择首发精灵失败: {elf['name']}")
             return False
 
@@ -91,7 +93,7 @@ class SkillExecutor:
 
     def confirm_selection(self) -> bool:
         """确认选择"""
-        return self.ctrl.find_and_click("popup/confirm.png")
+        return self.ctrl.find_and_click_with_timeout("popup/confirm.png", timeout=5)
 
     def wait_for_switch_panel(self, timeout: float = 3) -> bool:
         """等待切换面板出现"""
