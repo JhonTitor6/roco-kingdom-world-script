@@ -80,8 +80,12 @@ roco-kingdom-script/
     "battle_end": 10
   },
   "loop_count": 10,
-  "screenshot_debug": false,
-  "hwnd": null
+  "screenshot_debug": "on_failure",
+  "log_level": "DEBUG",
+  "window": {
+    "class_name": "UnrealWindow",
+    "title": "洛克王国：世界"
+  }
 }
 ```
 
@@ -90,8 +94,10 @@ roco-kingdom-script/
 | `similarity` | 默认图像匹配相似度阈值 |
 | `timeouts.*` | 各操作的超时时间（秒） |
 | `loop_count` | 循环执行次数 |
-| `screenshot_debug` | 是否保存调试截图 |
-| `hwnd` | 游戏窗口句柄（运行时指定） |
+| `screenshot_debug` | 调试截图策略：`on_failure`=仅失败 / `always`=始终 / `off`=关闭 |
+| `log_level` | 日志级别：`DEBUG` / `INFO` / `WARNING`，默认 DEBUG |
+| `window.class_name` | 窗口类名：`UnrealWindow` |
+| `window.title` | 窗口标题：`洛克王国：世界` |
 
 ### 3.2 精灵配置 `config/elves.json`
 
@@ -371,11 +377,23 @@ class BattleStateMachine:
 
 ## 10. 待确认事项
 
-- [ ] 游戏窗口句柄获取方式（自动查找或手动指定）
-- [ ] 日志详细程度（DEBUG / INFO / WARNING）
-- [ ] 调试截图保存策略（仅失败时 / 始终 / 关闭）
+- [x] 游戏窗口句柄获取方式：使用 `win32gui.FindWindow`
+  - 类名：`UnrealWindow`
+  - 标题：`洛克王国：世界`
+- [x] 日志详细程度：`DEBUG`，要求可调（通过配置文件）
+- [x] 调试截图保存策略：仅失败时保存
+
+```python
+def find_window(title_part: str = "洛克王国：世界") -> int:
+    """查找游戏窗口"""
+    hwnd = win32gui.FindWindow("UnrealWindow", title_part)
+    if not hwnd:
+        logger.error("未找到游戏窗口")
+        raise Exception("未找到游戏窗口")
+    return hwnd
+```
 
 ---
 
-**文档状态**: 已确认
+**文档状态**: 所有待确认事项已完成
 **下一步**: 编写 implementation plan
