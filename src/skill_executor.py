@@ -96,6 +96,24 @@ class SkillExecutor:
         return self.ctrl.find_and_click_with_timeout("popup/confirm.png", timeout=5)
 
     def wait_for_switch_panel(self, timeout: float = 3) -> bool:
-        """等待切换面板出现"""
-        pos = self.ctrl.find_image_with_timeout("popup/switch_panel.png", timeout=timeout)
-        return pos is not None
+        """等待切换面板出现 - 通过检测精灵头像是否在左侧区域
+
+        切换面板打开后，精灵头像会出现在屏幕左侧（x < 600）
+        通过检测任意已知精灵头像是否出现在该区域来判断面板是否打开
+        """
+        elf_templates = [
+            "elves/tree3.png",
+            "elves/otter2.png",
+            "elves/pig3.png",
+            "elves/scepter3.png",
+        ]
+        start = time.time()
+        while time.time() - start < timeout:
+            self.ctrl.capture()
+            for elf_template in elf_templates:
+                pos = self.ctrl.find_image(elf_template, similarity=0.8)
+                if pos != (-1, -1) and pos[0] < 600:  # 左侧区域
+                    logger.debug(f"检测到切换面板: {elf_template} @ {pos}")
+                    return True
+            time.sleep(0.2)
+        return False
