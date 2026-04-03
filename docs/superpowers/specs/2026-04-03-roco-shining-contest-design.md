@@ -98,26 +98,26 @@ roco-kingdom-script/
 ```json
 {
   "elves": [
-    {"id": 1, "name": "精灵A", "template": "elves/elf_1.png", "role": "sacrifice"},
-    {"id": 2, "name": "精灵B", "template": "elves/elf_2.png", "role": "sacrifice"},
-    {"id": 3, "name": "精灵C", "template": "elves/elf_3.png", "role": "final"},
-    {"id": 4, "name": "精灵D", "template": "elves/elf_4.png", "role": "reserve"}
+    {"name": "精灵A", "template": "elves/elf_1.png", "role": "sacrifice"},
+    {"name": "精灵B", "template": "elves/elf_2.png", "role": "sacrifice"},
+    {"name": "精灵C", "template": "elves/elf_3.png", "role": "final"},
+    {"name": "精灵D", "template": "elves/elf_4.png", "role": "reserve"}
   ],
-  "initial_sacrifices": 3,
-  "final_action": "energy",
-  "sacrifices_first": null
+  "final_action": "energy"
 }
 ```
 
 | 字段 | 说明 |
 |-----|------|
-| `elves[].id` | 精灵编号（1-4） |
 | `elves[].name` | 精灵名称 |
-| `elves[].template` | 精灵头像模板图像路径 |
-| `elves[].role` | 角色：`sacrifice`=送死 / `final`=最后送死 / `reserve`=备用 |
-| `initial_sacrifices` | 初始送死精灵数量 |
+| `elves[].template` | 精灵头像模板图像路径（唯一标识） |
+| `elves[].role` | 角色：`sacrifice`=送死 / `final`=最后送死 / `reserve`=备用（速度慢时替代final） |
 | `final_action` | 最后精灵动作：`energy`=聚能 / `defense`=防御 |
-| `sacrifices_first` | `null`=由游戏决定 / `true`=我方先手 / `false`=对方先手 |
+
+**角色说明：**
+- `final` — 最后的精灵，整场战斗最后送死
+- `sacrifice` — 送死精灵，按顺序送死
+- `reserve` — 备用精灵，**速度慢时替代 final 提前送死** |
 
 ---
 
@@ -145,6 +145,33 @@ roco-kingdom-script/
 | 聚能 | 按键盘 `X` |
 | 更换精灵 | 按键盘 `E` → 弹出精灵列表 → 识图点击选择 |
 
+### 4.5 精灵角色与送死顺序
+
+**角色定义：**
+- `final` — 最后的精灵，整场战斗最后送死
+- `sacrifice` — 送死精灵，按顺序送死
+- `reserve` — 备用精灵，速度慢时替代 final 提前送死
+
+**速度优先（我方先手）时的送死顺序：**
+```
+第1只 → final
+第2只 → sacrifice_1
+第3只 → sacrifice_2
+最后只 → reserve（防御/聚能）
+```
+
+**速度劣势（对方先手）时的送死顺序：**
+```
+第1回合 → final（防御/聚能，让对方先送）
+对方送死3只后切换：
+第4只 → reserve
+第5只 → sacrifice_1
+第6只 → sacrifice_2
+第7只 → final
+```
+
+**重要：精灵的 template 图像才是唯一标识，配置顺序可随意替换。**
+
 ---
 
 ## 5. 状态机设计
@@ -156,9 +183,12 @@ class BattleState(Enum):
     IDLE = "idle"                      # 等待开始
     START_CHALLENGE = "start_challenge"# 点击开始挑战
     CHECK_INSUFFICIENT = "check_insufficient"  # 检查弹窗
+    SELECT_FIRST = "select_first"      # 选择首发精灵
+    CONFIRM_FIRST = "confirm_first"    # 确认首发
     BATTLE_START = "battle_start"      # 等待战斗开始
+    SPEED_CHECK = "speed_check"       # 检测速度优势
     SACRIFICE_PHASE = "sacrifice_phase"  # 送死阶段
-    FINAL_PHASE = "final_phase"       # 最后一精灵阶段
+    FINAL_PHASE = "final_phase"       # 最后精灵阶段
     SWITCH_ELF = "switch_elf"         # 切换精灵
     BATTLE_END = "battle_end"         # 战斗结束
     RETRY = "retry"                   # 再次切磋
@@ -173,37 +203,41 @@ flowchart TD
     A[IDLE: 闪耀大赛页面] --> B["点击「开始挑战」"]
     B --> C{"精灵数不足弹窗?"}
     C -->|是| D["点击「确认」"]
-    C -->|否| E{"战斗开始\n识图:彗星技能"}
+    C -->|否| E{"选择首发精灵"}
     D --> E
-    E -->|超时| A
-    E -->|检测到| F["释放彗星"]
-    F --> G["检测红色小圆点\n判断:我方精灵是否-1"]
 
-    G -->|我方先送死| H["按4释放防御"]
-    H --> I{"对方是否送死\n小圆点-1?"}
-    I -->|否| I
-    I -->|是| J["按X聚能"]
-    J --> K{"对方已送死3只?"}
-    K -->|否| J
-    K -->|是| L["按E切换精灵\n识图选择final精灵"]
+    E --> F["识图选择 final 精灵"]
+    F --> G["点击「确认首发」"]
+    G --> H{"战斗开始\n识图:彗星技能"}
 
-    G -->|对方先送死| M["等待对方送死"]
-    M --> N{"对方已送死3只?"}
-    N -->|否| M
-    N -->|是| L
+    H -->|超时| A
+    H -->|检测到| I["释放彗星"]
 
-    L --> O["释放彗星送死"]
-    O --> P{"我方剩1只?"}
-    P -->|否| O
-    P -->|是| Q["最后一只\n聚能或防御"]
+    I --> J{"我方精灵-1?"}
+    J -->|是 我方先手| K["按4释放防御"]
+    J -->|否 对方先手| L["final 防御/聚能\n等待对方送死"]
 
-    Q --> R{"战斗结束\n识图: battle_end"}
-    O --> R
-    R --> S["点击「再次切磋」"]
-    S --> T{"对方不想切磋?"}
-    T -->|是| U["点击「退出」"]
-    T -->|否| A
-    U --> A
+    K --> M{"对方精灵-1?"}
+    M -->|否| M
+    M -->|是| N{"对方已送死3只?"}
+    N -->|否| L
+    N -->|是| O["按E切换\n识图选择 reserve"]
+
+    L --> P{"对方已送死3只?"}
+    P -->|否| L
+    P -->|是| O
+
+    O --> Q["reserve 释放彗星"]
+    Q --> R{"我方剩1只?"}
+    R -->|否| Q
+    R -->|是| S["最后一只\n聚能或防御"]
+    S --> T{"战斗结束\n识图: battle_end"}
+
+    T --> U["点击「再次切磋」"]
+    U --> V{"对方不想切磋?"}
+    V -->|是| W["点击「退出」"]
+    V -->|否| A
+    W --> A
 ```
 
 ---
@@ -307,7 +341,10 @@ class BattleStateMachine:
 | 战斗 | `retry.png` | 再次切磋按钮 |
 | 战斗 | `quit.png` | 退出按钮 |
 | 弹窗 | `insufficient.png` | 精灵数不足弹窗 |
-| 精灵 | `elf_1.png` ~ `elf_4.png` | 各精灵头像 |
+| 弹窗 | `confirm.png` | 确认按钮（通用） |
+| 选择 | `select_first.png` | 选择首发精灵界面 |
+| 切换 | `switch_panel.png` | 切换精灵面板 |
+| 精灵 | `elf_1.png` ~ `elf_4.png` | 各精灵头像（由 template 字段引用） |
 | 生命点 | `dot_active.png` | 亮着的小圆点 |
 | 生命点 | `dot_inactive.png` | 熄灭的小圆点 |
 
