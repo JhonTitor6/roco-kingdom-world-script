@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# Logs
+logs/*.log
+logs/debug/*.png
+
+# Assets templates (用户提供的截图)
+assets/templates/**/*.png
+!assets/templates/.gitkeep
