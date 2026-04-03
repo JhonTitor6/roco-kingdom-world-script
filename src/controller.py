@@ -5,6 +5,7 @@ import time
 
 from loguru import logger
 from win_util import WinController
+from win_util.mouse import left_click
 
 from src.exceptions import ImageNotFoundError
 
@@ -91,8 +92,12 @@ class GameController:
         return False
 
     def click_at(self, x: int, y: int, x_range: int = 20, y_range: int = 20) -> bool:
-        """在指定位置点击"""
-        return self.win.mouse.bg_left_click((x, y), x_range=x_range, y_range=y_range)
+        """在指定位置点击（前台点击）"""
+        # 添加随机偏移模拟人工点击
+        import random
+        offset_x = random.randint(-x_range, x_range) if x_range > 0 else 0
+        offset_y = random.randint(-y_range, y_range) if y_range > 0 else 0
+        return left_click((x + offset_x, y + offset_y))
 
     def find_and_click(self, template_path: str, similarity: float = None) -> bool:
         """查找图像并点击（立即返回）"""
