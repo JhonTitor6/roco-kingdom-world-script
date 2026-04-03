@@ -1,0 +1,9 @@
+{
+  "elves": [
+    {"name": "精灵A", "template": "elves/elf_1.png", "role": "sacrifice"},
+    {"name": "精灵B", "template": "elves/elf_2.png", "role": "sacrifice"},
+    {"name": "精灵C", "template": "elves/elf_3.png", "role": "final"},
+    {"name": "精灵D", "template": "elves/elf_4.png", "role": "reserve"}
+  ],
+  "final_action": "energy"
+}

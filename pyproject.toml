@@ -1,6 +1,11 @@
 [project]
-name = "roco-kingdom-world-script"
+name = "roco-kingdom-script"
 version = "0.1.0"
-description = "Add your description here"
-requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "win-util @ file:///F:/Users/56440/PythonProjects/roco-kingdom-world-script/win_util",
+    "loguru>=0.7.0",
+    "numpy>=1.26.0",
+]
+
+[project.scripts]
+roco = "main:main"

@@ -1,0 +1,16 @@
+{
+  "similarity": 0.8,
+  "timeouts": {
+    "battle_start": 10,
+    "skill_cast": 5,
+    "switch_elf": 3,
+    "battle_end": 10
+  },
+  "loop_count": 10,
+  "screenshot_debug": "on_failure",
+  "log_level": "DEBUG",
+  "window": {
+    "class_name": "UnrealWindow",
+    "title": "洛克王国：世界"
+  }
+}
