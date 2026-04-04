@@ -20,7 +20,6 @@ class ElfManager:
         self.config = config
         self.controller = controller
         self.elves: List[Dict] = config["elves"]
-        self.final_action = config.get("final_action", "energy")
 
         # 按角色分类
         self._final_elf = self._get_elf_by_role(ElfRole.FINAL)
@@ -109,7 +108,3 @@ class ElfManager:
             # 对方先手: reserve -> sacrifice -> sacrifice -> final
             order = [self.reserve_elf] + self.sacrifice_elves + [self.final_elf]
         return order
-
-    def get_final_action(self) -> str:
-        """获取最后精灵的动作"""
-        return self.final_action
