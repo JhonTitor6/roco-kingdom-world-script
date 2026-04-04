@@ -170,3 +170,35 @@ class GameController:
         cv2.imwrite(str(path), screenshot)
         logger.debug(f"调试截图已保存: {path}")
         return path
+
+    def find_images_all(
+        self,
+        template: Union[str, List[str]],
+        similarity: float = None
+    ) -> List[Tuple[int, int]]:
+        """查找所有匹配的图像
+
+        Args:
+            template: 相对于 TEMPLATE_BASE 的路径，支持单字符串或字符串列表
+            similarity: 相似度阈值
+
+        Returns:
+            匹配位置的列表 [(x1, y1), (x2, y2), ...]，未找到返回空列表
+        """
+        sim = similarity or self._similarity
+        self.capture()
+
+        # 兼容单字符串和列表
+        templates = [template] if isinstance(template, str) else template
+
+        results = []
+        for t in templates:
+            full_path = self.TEMPLATE_BASE / t
+            matches = self.win.image_finder.find_images_all(
+                str(full_path),
+                similarity=sim
+            )
+            results.extend(matches)
+
+        logger.debug(f"找到 {len(results)} 个匹配: {template}")
+        return results
