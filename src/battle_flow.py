@@ -37,11 +37,12 @@ class BattleFlow:
             return False
 
         # 2. 检查精灵数不足弹窗
+        time.sleep(1)
         insufficient_pos = self.ctrl.find_image_with_timeout("popup/insufficient.png", timeout=3, similarity=0.8)
         if insufficient_pos is not None:
             logger.info("检测到精灵数不足弹窗，点击确认按钮")
             self.ctrl.find_and_click_with_timeout("popup/confirm.png", timeout=3)
-            time.sleep(0.3)
+        time.sleep(5)
 
         # 3. 选择首发精灵（final 精灵）- select_first_elf 已内置 timeout
         if not self.skill.select_first_elf(self.elf_mgr.final_elf):
@@ -52,6 +53,8 @@ class BattleFlow:
         if not self.skill.confirm_selection():
             logger.error("确认首发失败")
             return False
+
+        time.sleep(5)
 
         # 5. 等待战斗开始
         battle_start = self.ctrl.find_image_with_timeout(
@@ -139,11 +142,9 @@ class BattleFlow:
 
             # 如果是最后一只，执行最终动作
             if i == len(order) - 1:
-                action = self.elf_mgr.get_final_action()
-                if action == "energy":
+                # 尝试释放防御，如果失败则聚能
+                if not self.skill.cast_skill("defense", timeout=1):
                     self.skill.press_energy()
-                else:
-                    self.skill.cast_skill("defense")
 
     def faster_flow(self) -> None:
         """我方速度快的流程"""
@@ -169,11 +170,9 @@ class BattleFlow:
         self.skill.switch_to_elf(self.elf_mgr.reserve_elf)
 
         # 5. reserve 执行最终动作
-        action = self.elf_mgr.get_final_action()
-        if action == "energy":
+        # 尝试释放防御（图标亮=可释放），如果失败（冷却中）则聚能
+        if not self.skill.cast_skill("defense", timeout=1):
             self.skill.press_energy()
-        else:
-            self.skill.cast_skill("defense")
 
     def slower_flow(self) -> None:
         """我方速度慢的流程"""
@@ -181,11 +180,9 @@ class BattleFlow:
 
         # 1. final 防御/聚能
         logger.info("Final 精灵防御/聚能")
-        action = self.elf_mgr.get_final_action()
-        if action == "energy":
+        # 尝试释放防御（图标亮=可释放），如果失败（冷却中）则聚能
+        if not self.skill.cast_skill("defense", timeout=1):
             self.skill.press_energy()
-        else:
-            self.skill.cast_skill("defense")
 
         # 2. 等待对方送死 3 只
         logger.info("等待对方送死 3 只...")
