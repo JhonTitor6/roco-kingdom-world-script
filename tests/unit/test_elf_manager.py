@@ -26,8 +26,7 @@ class TestElfManager:
                 {"name": "精灵B", "template": "elves/elf_2.png", "role": "sacrifice"},
                 {"name": "精灵C", "template": "elves/elf_3.png", "role": "final"},
                 {"name": "精灵D", "template": "elves/elf_4.png", "role": "reserve"}
-            ],
-            "final_action": "energy"
+            ]
         }
 
     @pytest.fixture
@@ -39,7 +38,6 @@ class TestElfManager:
     def test_initialization(self, elf_manager, mock_config):
         """测试初始化"""
         assert elf_manager.config == mock_config
-        assert elf_manager.final_action == "energy"
 
     def test_final_elf_property(self, elf_manager):
         """测试 final_elf 属性"""
@@ -58,10 +56,6 @@ class TestElfManager:
         sacrifice_elves = elf_manager.sacrifice_elves
         assert len(sacrifice_elves) == 2
         assert all(elf["role"] == "sacrifice" for elf in sacrifice_elves)
-
-    def test_get_final_action(self, elf_manager):
-        """测试获取最终动作"""
-        assert elf_manager.get_final_action() == "energy"
 
     def test_get_sacrifice_order_faster(self, elf_manager):
         """测试送死顺序 - 我方先手"""
