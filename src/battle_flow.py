@@ -11,6 +11,9 @@ from src.exceptions import ImageNotFoundError, BattleTimeoutError
 class BattleFlow:
     """战斗流程控制"""
 
+    # 敌方精灵状态区域（右上）
+    ENEMY_REGION = (2000, 0, 2560, 320)
+
     def __init__(
         self,
         controller: GameController,
@@ -42,6 +45,7 @@ class BattleFlow:
         if insufficient_pos is not None:
             logger.info("检测到精灵数不足弹窗，点击确认按钮")
             self.ctrl.find_and_click_with_timeout("popup/confirm.png", timeout=3)
+        # 等待匹配
         time.sleep(5)
 
         # 3. 选择首发精灵（final 精灵）- select_first_elf 已内置 timeout
@@ -49,12 +53,14 @@ class BattleFlow:
             logger.error("选择首发精灵失败")
             return False
 
+        time.sleep(1)
+
         # 4. 确认首发 - confirm_selection 已内置 timeout
         if not self.skill.confirm_selection():
             logger.error("确认首发失败")
             return False
 
-        time.sleep(5)
+        time.sleep(10)
 
         # 5. 等待战斗开始
         battle_start = self.ctrl.find_image_with_timeout(
@@ -80,33 +86,18 @@ class BattleFlow:
         """
         # 区域坐标
         ally_region = (0, 0, 700, 320)   # 左上：我方
-        enemy_region = (2000, 0, 99999, 320)  # 右上：敌方
-
-        def count_inactive_in_region(region) -> int:
-            """统计指定区域的inactive dots数量"""
-            x0, y0, x1, y1 = region
-            dots = self.ctrl.find_images_all(
-                "dots/dot_inactive.png",
-                similarity=0.8,
-                x0=x0, y0=y0, x1=x1, y1=y1
-            )
-            return len(dots)
-
-        # 初始：记录初始 inactive dot 数量
-        initial_ally_inactive = count_inactive_in_region(ally_region)
-        initial_enemy_inactive = count_inactive_in_region(enemy_region)
-        logger.debug(f"初始inactive: 我方={initial_ally_inactive}, 敌方={initial_enemy_inactive}")
+        enemy_region = self.ENEMY_REGION
 
         # 轮询检测谁先出现新的inactive dot
-        for i in range(20):  # 最多6秒
-            time.sleep(0.3)
-            current_ally = count_inactive_in_region(ally_region)
-            current_enemy = count_inactive_in_region(enemy_region)
+        for i in range(20):
+            time.sleep(1)
+            current_ally = self.count_inactive_in_region(ally_region)
+            current_enemy = self.count_inactive_in_region(enemy_region)
 
-            if current_ally > initial_ally_inactive:
+            if current_ally == 1:
                 logger.info(f"我方先送死，速度优势 (检测轮次: {i+1})")
                 return True
-            if current_enemy > initial_enemy_inactive:
+            if current_enemy == 1:
                 logger.info(f"对方先送死，速度劣势 (检测轮次: {i+1})")
                 return False
 
@@ -128,105 +119,107 @@ class BattleFlow:
             具体坐标需要根据实际截图确定。当前使用固定区域搜索。
             闪耀大赛固定 4v4，敌方初始4只。
         """
-        initial_enemy_count = 4  # 闪耀大赛固定 4v4
+        enemy_region = self.ENEMY_REGION
 
-        for _ in range(30):  # 最多等 30 * 0.5 = 15 秒
-            time.sleep(0.5)
+        for _ in range(30):
+            time.sleep(1)
+            inactive_count = self.count_inactive_in_region(enemy_region)
 
-            # 识图查找敌方小圆点（右上区域）
-            # TODO: 替换为实际测量的区域坐标
-            # enemy_dots = self.ctrl.find_images_all(
-            #     "dots/dot_active.png",
-            #     x0=窗口宽度//2, y0=0, x1=窗口宽度, y1=窗口高度//2,
-            #     similarity=0.8
-            # )
-            # enemy_count = len(enemy_dots)
-            #
-            # if enemy_count <= initial_enemy_count - target:
-            #     logger.info(f"敌方已送死 {target} 只，当前剩余 {enemy_count}")
-            #     return True
-
-            pass  # TODO: 根据实际截图确定区域后实现
+            if inactive_count == 3:
+                logger.info(f"敌方已送死 {target} 只，当前剩余 {inactive_count}")
+                return True
 
         logger.warning(f"等待对方送死超时（等待 {target} 只）")
         return False
 
-    def sacrifice_sequence(self, order: list) -> None:
-        """执行送死序列
+    def count_inactive_in_region(self, region) -> int:
+        """统计指定区域的inactive dots数量"""
+        x0, y0, x1, y1 = region
+        dots = self.ctrl.find_images_all(
+            "dots/dot_inactive.png",
+            similarity=0.8,
+            x0=x0, y0=y0, x1=x1, y1=y1
+        )
+        return len(dots)
 
-        Args:
-            order: 送死顺序的精灵列表
-        """
-        for i, elf in enumerate(order):
-            logger.info(f"送死 #{i+1}: {elf['name']}")
-            # 释放彗星
-            if not self.skill.cast_skill("comet"):
-                logger.warning(f"释放彗星失败: {elf['name']}")
-            time.sleep(1)
-
-            # 如果是最后一只，执行最终动作
-            if i == len(order) - 1:
-                # 尝试释放防御，如果失败则聚能
-                if not self.skill.cast_skill("defense", timeout=1):
-                    self.skill.press_energy()
+    def is_skill_releasable(self) -> bool:
+        """检测是否有可释放技能（聚能图标出现）"""
+        pos = self.ctrl.find_image("skills/energy.png", similarity=0.8)
+        return pos != (-1, -1)
 
     def faster_flow(self) -> None:
         """我方速度快的流程"""
         logger.info("=== 速度优势流程 ===")
+        time.sleep(10)
 
-        # 1. final 先送死
-        logger.info("Final 精灵送死")
-        self.skill.cast_skill("comet")
-        time.sleep(1)
-
-        # 2. sacrifice 精灵送死
+        # 1. sacrifice 精灵送死
         for elf in self.elf_mgr.sacrifice_elves:
+            self.skill.switch_to_elf(elf)
             logger.info(f"送死: {elf['name']}")
             self.skill.cast_skill("comet")
-            time.sleep(1)
 
-        # 3. 等待对方送死 3 只
-        logger.info("等待对方送死 3 只...")
-        self.wait_for_enemy_sacrifice(3)
-
-        # 4. 切换到 reserve
+        # 2. 切换到 reserve
         logger.info("切换到 reserve 精灵")
         self.skill.switch_to_elf(self.elf_mgr.reserve_elf)
 
-        # 5. reserve 执行最终动作
-        # 尝试释放防御（图标亮=可释放），如果失败（冷却中）则聚能
-        if not self.skill.cast_skill("defense", timeout=1):
-            self.skill.press_energy()
+        # 3. reserve 执行最终动作（循环直到战斗结束）
+        logger.info("Reserve 精灵防御/聚能循环")
+        while True:
+            # 检测是否有可释放技能（聚能图标）
+            if self.is_skill_releasable():
+                # 尝试释放防御，如果失败（冷却中）则聚能
+                if not self.skill.cast_skill("defense", timeout=1):
+                    self.skill.press_energy()
+                time.sleep(5)
+
+            # 检测战斗是否结束
+            if self.ctrl.find_image("battle/battle_end.png", similarity=0.8) != (-1, -1):
+                logger.info("战斗结束")
+                break
+
+            time.sleep(1)
 
     def slower_flow(self) -> None:
         """我方速度慢的流程"""
         logger.info("=== 速度劣势流程 ===")
 
-        # 1. final 防御/聚能
-        logger.info("Final 精灵防御/聚能")
-        # 尝试释放防御（图标亮=可释放），如果失败（冷却中）则聚能
-        if not self.skill.cast_skill("defense", timeout=1):
-            self.skill.press_energy()
+        enemy_region = self.ENEMY_REGION
 
-        # 2. 等待对方送死 3 只
-        logger.info("等待对方送死 3 只...")
-        self.wait_for_enemy_sacrifice(3)
+        # 1. final 防御/聚能循环，直到敌方出现3个inactive
+        logger.info("Final 精灵防御/聚能循环")
+        while True:
+            if self.is_skill_releasable():
+                if not self.skill.cast_skill("defense", timeout=1):
+                    self.skill.press_energy()
+                    time.sleep(5)
+            else:
+                time.sleep(0.3)
 
-        # 3. 切换到 reserve
+            # 检测敌方 inactive 数量
+            inactive_count = self.count_inactive_in_region(enemy_region)
+            if inactive_count >= 3:
+                logger.info(f"敌方已送死达到 {inactive_count} 只，退出循环")
+                break
+
+            time.sleep(0.5)
+
+        time.sleep(5)
+        # 2. 切换到 reserve
         logger.info("切换到 reserve 精灵")
         self.skill.switch_to_elf(self.elf_mgr.reserve_elf)
+        time.sleep(5)
 
-        # 4. reserve 送死
+        # 3. reserve 送死
         self.skill.cast_skill("comet")
-        time.sleep(1)
 
-        # 5. sacrifice 精灵送死
+        # 4. sacrifice 精灵送死
         for elf in self.elf_mgr.sacrifice_elves:
+            self.skill.switch_to_elf(elf)
             logger.info(f"送死: {elf['name']}")
-            self.skill.cast_skill("comet")
-            time.sleep(1)
+            time.sleep(5)
+            self.skill.cast_skill("comet", timeout=60)
 
-        # 6. final 送死
+        # 5. final 送死
         logger.info("Final 精灵送死")
         self.skill.cast_skill("comet")
 
@@ -247,16 +240,12 @@ class BattleFlow:
             return False
 
         logger.info("战斗结束")
+        self.ctrl.click_at(*battle_end)
 
         # 点击再次切磋，等待下一画面出现
         if self.ctrl.find_and_click_with_timeout("battle/retry.png", timeout=3):
-            time.sleep(0.5)
-            # 检测对方不想切磋
-            quit_pos = self.ctrl.find_image_with_timeout("battle/quit.png", timeout=2, similarity=0.8)
-            if quit_pos is not None:
-                logger.info("对方不想切磋，点击退出")
-                self.ctrl.find_and_click_with_timeout("battle/quit.png", timeout=2)
-                time.sleep(0.5)
+            time.sleep(10)
+            self.ctrl.find_and_click_with_timeout("battle/quit.png", timeout=2)
             return True
 
         return False

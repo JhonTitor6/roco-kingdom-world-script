@@ -28,6 +28,37 @@ def to_project_path(path: str) -> str:
         return str(p)
     return str(PROJECT_ROOT / p)
 
+
+def match_template_nms(matches: List[Tuple[int, int, float]], distance_threshold: float = 10) -> List[Tuple[int, int, float]]:
+    """模板匹配结果去重（曼哈顿距离）
+
+    Args:
+        matches: 匹配结果列表 [(x, y, score), ...]
+        distance_threshold: 曼哈顿距离阈值，小于此值认为是重复检测
+
+    Returns:
+        去重后的匹配结果列表
+    """
+    if not matches:
+        return []
+
+    # 按置信度降序排序
+    matches.sort(key=lambda m: m[2], reverse=True)
+
+    # 简单去重：曼哈顿距离超过阈值视为新点
+    unique_points = []
+    for x, y, score in matches:
+        is_duplicate = False
+        for ux, uy, _ in unique_points:
+            if abs(x - ux) <= distance_threshold and abs(y - uy) <= distance_threshold:
+                is_duplicate = True
+                break
+        if not is_duplicate:
+            unique_points.append((x, y, score))
+
+    return unique_points
+
+
 class ScreenCapture:
     """
     窗口截图和区域截图封装
@@ -318,13 +349,9 @@ class ImageFinder:
             y1 = min(y1, h_img)
             big_img = big_img[y0:y1, x0:x1]
 
-        # ---------- 灰度结构匹配 ----------
-        big_gray = cv2.cvtColor(big_img, cv2.COLOR_BGR2GRAY)
-        small_gray = cv2.cvtColor(small_img, cv2.COLOR_BGR2GRAY)
-
         result = cv2.matchTemplate(
-            big_gray,
-            small_gray,
+            big_img,
+            small_img,
             cv2.TM_CCOEFF_NORMED
         )
 
@@ -361,7 +388,8 @@ class ImageFinder:
         # 按相似度降序排序
         matches.sort(key=lambda m: m[2], reverse=True)
 
-        return matches
+        # 距离去重
+        return match_template_nms(matches)
 
     def bg_find_pic(self, screenshot: Optional[Any], small_img_path, x0=0, y0=0, x1=99999, y1=99999, similarity=0.8) -> Tuple[int, int]:
         """

@@ -9,5 +9,5 @@ logs/*.log
 logs/debug/*.png
 
 # Assets templates (用户提供的截图)
-assets/templates/**/*.png
+#assets/templates/**/*.png
 !assets/templates/.gitkeep
