@@ -70,25 +70,49 @@ class BattleFlow:
         return True
 
     def detect_speed_advantage(self) -> bool:
-        """检测速度优势（通过判断我方是否先送死）
+        """检测速度优势（通过检测谁先出现inactive dot）
+
+        我方区域：左上 (x<700, y<320)
+        敌方区域：右上 (x>2000, y<320)
 
         Returns:
-            True=我方速度快，False=对方速度快
+            True=我方先送死（速度优势），False=对方先送死（速度劣势）
         """
-        # 等待一轮行动，看我方精灵是否先减少
-        initial_count = self.elf_mgr.count_alive_elves()
-        logger.debug(f"初始精灵数: {initial_count}")
+        # 区域坐标
+        ally_region = (0, 0, 700, 320)   # 左上：我方
+        enemy_region = (2000, 0, 99999, 320)  # 右上：敌方
 
-        # 等待约 2 秒检测变化
-        for _ in range(10):
+        def count_inactive_in_region(region) -> int:
+            """统计指定区域的inactive dots数量"""
+            x0, y0, x1, y1 = region
+            dots = self.ctrl.find_images_all(
+                "dots/dot_inactive.png",
+                similarity=0.8,
+                x0=x0, y0=y0, x1=x1, y1=y1
+            )
+            return len(dots)
+
+        # 初始：记录初始 inactive dot 数量
+        initial_ally_inactive = count_inactive_in_region(ally_region)
+        initial_enemy_inactive = count_inactive_in_region(enemy_region)
+        logger.debug(f"初始inactive: 我方={initial_ally_inactive}, 敌方={initial_enemy_inactive}")
+
+        # 轮询检测谁先出现新的inactive dot
+        for i in range(20):  # 最多6秒
             time.sleep(0.3)
-            current_count = self.elf_mgr.count_alive_elves()
-            if current_count < initial_count:
-                logger.info(f"我方先送死，速度优势")
-                return True
+            current_ally = count_inactive_in_region(ally_region)
+            current_enemy = count_inactive_in_region(enemy_region)
 
-        logger.info(f"对方先送死，速度劣势")
-        return False
+            if current_ally > initial_ally_inactive:
+                logger.info(f"我方先送死，速度优势 (检测轮次: {i+1})")
+                return True
+            if current_enemy > initial_enemy_inactive:
+                logger.info(f"对方先送死，速度劣势 (检测轮次: {i+1})")
+                return False
+
+        # 超时：默认我方先（保守判断）
+        logger.info("速度检测超时，默认我方先")
+        return True
 
     def wait_for_enemy_sacrifice(self, target: int = 3) -> bool:
         """等待对方送死指定数量

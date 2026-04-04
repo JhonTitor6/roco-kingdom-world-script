@@ -174,13 +174,19 @@ class GameController:
     def find_images_all(
         self,
         template: Union[str, List[str]],
-        similarity: float = None
+        similarity: float = None,
+        x0: int = 0,
+        y0: int = 0,
+        x1: int = 99999,
+        y1: int = 99999
     ) -> List[Tuple[int, int]]:
         """查找所有匹配的图像
 
         Args:
             template: 相对于 TEMPLATE_BASE 的路径，支持单字符串或字符串列表
             similarity: 相似度阈值
+            x0, y0: 搜索区域左上角
+            x1, y1: 搜索区域右下角
 
         Returns:
             匹配位置的列表 [(x1, y1), (x2, y2), ...]，未找到返回空列表
@@ -196,9 +202,10 @@ class GameController:
             full_path = self.TEMPLATE_BASE / t
             matches = self.win.image_finder.bg_find_pic_all_by_cache(
                 str(full_path),
+                x0=x0, y0=y0, x1=x1, y1=y1,
                 similarity=sim
             )
             results.extend(matches)
 
-        logger.debug(f"找到 {len(results)} 个匹配: {template}")
+        logger.debug(f"找到 {len(results)} 个匹配: {template} @ {results}")
         return results
