@@ -68,6 +68,9 @@ class BattleStateMachine:
 
             self.transition(BattleState.SPEED_CHECK)
 
+            # 释放彗星技能（等待时间由 skill_wait_after_cast 配置）
+            self.flow.skill.cast_skill("comet")
+
             # 检测速度优势
             faster = self.flow.detect_speed_advantage()
 
