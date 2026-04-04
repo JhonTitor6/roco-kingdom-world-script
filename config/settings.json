@@ -1,5 +1,6 @@
 {
-  "similarity": 0.8,
+  "similarity": 0.6,
+  "skill_wait_after_cast": 10,
   "timeouts": {
     "battle_start": 10,
     "skill_cast": 5,
