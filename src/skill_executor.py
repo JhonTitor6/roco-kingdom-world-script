@@ -11,11 +11,12 @@ class SkillExecutor:
     def __init__(self, controller: GameController):
         self.ctrl = controller
 
-    def cast_skill(self, skill_name: str) -> bool:
+    def cast_skill(self, skill_name: str, timeout: float = 5) -> bool:
         """释放技能（通过识图点击技能栏）
 
         Args:
             skill_name: 技能名 (comet / defense)
+            timeout: 查找技能图标的超时时间（秒）
 
         Returns:
             是否成功
@@ -29,13 +30,17 @@ class SkillExecutor:
             logger.error(f"未知技能: {skill_name}")
             return False
 
-        pos = self.ctrl.find_image(template, similarity=0.8)
-        if pos == (-1, -1):
+        pos = self.ctrl.find_image_with_timeout(template, timeout=timeout, similarity=0.8)
+        if pos is None:
             logger.warning(f"技能图标未找到: {skill_name}")
             return False
 
         self.ctrl.click_at(*pos)
         logger.info(f"释放技能: {skill_name}")
+
+        # 技能释放后等待（可配置）
+        wait_time = self.ctrl.settings.get("skill_wait_after_cast", 10)
+        time.sleep(wait_time)
         return True
 
     def press_energy(self) -> None:
