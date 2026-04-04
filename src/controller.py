@@ -194,7 +194,7 @@ class GameController:
         results = []
         for t in templates:
             full_path = self.TEMPLATE_BASE / t
-            matches = self.win.image_finder.find_images_all(
+            matches = self.win.image_finder.bg_find_pic_all_by_cache(
                 str(full_path),
                 similarity=sim
             )
