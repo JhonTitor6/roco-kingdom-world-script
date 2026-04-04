@@ -55,7 +55,7 @@ def cast_skill(self, skill_name: str, timeout: float = 5) -> bool:
         return False
 
     pos = self.ctrl.find_image_with_timeout(template, timeout=timeout, similarity=0.8)
-    if pos == (-1, -1):
+    if pos is None:
         logger.warning(f"技能图标未找到: {skill_name}")
         return False
 
