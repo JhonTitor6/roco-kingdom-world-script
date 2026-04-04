@@ -11,7 +11,7 @@ class SkillExecutor:
     def __init__(self, controller: GameController):
         self.ctrl = controller
 
-    def cast_skill(self, skill_name: str, timeout: float = 5) -> bool:
+    def cast_skill(self, skill_name: str, timeout: float = 10) -> bool:
         """释放技能（通过识图点击技能栏）
 
         Args:
@@ -34,7 +34,7 @@ class SkillExecutor:
         if pos is None:
             logger.warning(f"技能图标未找到: {skill_name}")
             return False
-
+        time.sleep(1)
         self.ctrl.click_at(*pos)
         logger.info(f"释放技能: {skill_name}")
 
@@ -44,12 +44,16 @@ class SkillExecutor:
         return True
 
     def press_energy(self) -> None:
-        """聚能（按 X 键）"""
-        self.ctrl.press_key('X')
-        logger.info("聚能 (X)")
+        """聚能（识图点击 energy.png）"""
+        pos = self.ctrl.find_image_with_timeout("skills/energy.png", timeout=5, similarity=0.8)
+        if pos is not None:
+            self.ctrl.click_at(*pos)
+            logger.info("聚能")
+        else:
+            logger.warning("聚能图像未找到")
 
     def press_defense(self) -> None:
-        """防御（按 4 键，识图点击）"""
+        """防御（识图点击）"""
         self.cast_skill("defense")
 
     def switch_to_elf(self, elf) -> bool:
@@ -61,22 +65,56 @@ class SkillExecutor:
         Returns:
             是否成功
         """
-        # 按 E 打开切换面板，等待面板出现
-        self.ctrl.press_key('E')
-        if not self.wait_for_switch_panel(timeout=3):
+        if not self.wait_for_switch_panel(timeout=5):
             logger.warning("切换面板未出现")
-            return False
+            # 等待可释放技能（聚能图像出现）
+            if not self.wait_for_releasable_skill(timeout=30):
+                logger.warning("等待可释放技能超时")
+                return False
+            time.sleep(2)
+            logger.info("打开精灵切换面板")
+            # 识图点击 switch.png 打开切换面板
+            pos = self.ctrl.find_image_with_timeout("skills/switch.png", timeout=5, similarity=0.8)
+            if pos is not None:
+                self.ctrl.click_at(*pos)
+                logger.info("打开切换面板")
+            else:
+                logger.warning("切换面板图标未找到")
+            time.sleep(2)
+
 
         # 识图查找目标精灵
         pos = self.ctrl.find_image_with_timeout(elf["template"], timeout=3, similarity=0.8)
         if pos is None:
             logger.warning(f"切换精灵失败: {elf['name']}")
-            self.ctrl.press_key('E')  # 关闭面板
             return False
 
         self.ctrl.click_at(*pos)
+        time.sleep(0.5)
+        self.ctrl.press_key("space")
         logger.info(f"切换精灵: {elf['name']}")
         return True
+
+    def wait_for_releasable_skill(self, timeout: float = 10) -> bool:
+        """等待可释放技能（聚能图像出现）
+
+        Args:
+            timeout: 超时时间（秒）
+
+        Returns:
+            是否检测到聚能图像
+        """
+        template = "skills/energy.png"
+        start = time.time()
+        while time.time() - start < timeout:
+            self.ctrl.capture()
+            pos = self.ctrl.find_image(template, similarity=0.8)
+            if pos != (-1, -1):
+                logger.debug(f"检测到可释放技能: {template} @ {pos}")
+                return True
+            time.sleep(0.3)
+        logger.warning(f"等待可释放技能超时: {template}")
+        return False
 
     def select_first_elf(self, elf) -> bool:
         """在选择首发精灵界面选择精灵
@@ -87,7 +125,7 @@ class SkillExecutor:
         Returns:
             是否成功
         """
-        pos = self.ctrl.find_image_with_timeout(elf["template"], timeout=5, similarity=0.8)
+        pos = self.ctrl.find_image_with_timeout(elf["template"], timeout=60, similarity=0.8)
         if pos is None:
             logger.warning(f"选择首发精灵失败: {elf['name']}")
             return False
