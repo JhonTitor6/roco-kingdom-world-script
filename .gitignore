@@ -3,6 +3,12 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .venv/
+.agents
+.claude
+.junie
+.trae
+skills-lock.json
+.idea
 
 # Logs
 logs/
