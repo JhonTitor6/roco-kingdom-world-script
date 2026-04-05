@@ -2,10 +2,10 @@
   "similarity": 0.6,
   "skill_wait_after_cast": 10,
   "timeouts": {
-    "battle_start": 10,
+    "battle_start": 60,
     "skill_cast": 5,
     "switch_elf": 3,
-    "battle_end": 10
+    "battle_end": 20
   },
   "loop_count": 10,
   "screenshot_debug": "on_failure",

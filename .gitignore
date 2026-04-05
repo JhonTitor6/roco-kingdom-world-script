@@ -5,8 +5,7 @@ __pycache__/
 .venv/
 
 # Logs
-logs/*.log
-logs/debug/*.png
+logs/
 
 # Assets templates (用户提供的截图)
 #assets/templates/**/*.png

@@ -150,7 +150,7 @@ class BattleFlow:
     def faster_flow(self) -> None:
         """我方速度快的流程"""
         logger.info("=== 速度优势流程 ===")
-        time.sleep(10)
+        time.sleep(3)
 
         # 1. sacrifice 精灵送死
         for elf in self.elf_mgr.sacrifice_elves:
@@ -207,7 +207,6 @@ class BattleFlow:
         # 2. 切换到 reserve
         logger.info("切换到 reserve 精灵")
         self.skill.switch_to_elf(self.elf_mgr.reserve_elf)
-        time.sleep(5)
 
         # 3. reserve 送死
         self.skill.cast_skill("comet")
@@ -216,7 +215,6 @@ class BattleFlow:
         for elf in self.elf_mgr.sacrifice_elves:
             self.skill.switch_to_elf(elf)
             logger.info(f"送死: {elf['name']}")
-            time.sleep(5)
             self.skill.cast_skill("comet", timeout=60)
 
         # 5. final 送死

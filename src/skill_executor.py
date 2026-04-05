@@ -93,6 +93,9 @@ class SkillExecutor:
         time.sleep(0.5)
         self.ctrl.press_key("space")
         logger.info(f"切换精灵: {elf['name']}")
+        time.sleep(5)
+        if elf['name'] == '权杖':
+            time.sleep(4)
         return True
 
     def wait_for_releasable_skill(self, timeout: float = 10) -> bool:
