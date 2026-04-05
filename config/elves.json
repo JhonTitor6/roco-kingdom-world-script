@@ -3,6 +3,6 @@
     {"name": "幽影树", "template": ["elves/tree3.png", "elves/tree3_lineup.png"], "role": "final"},
     {"name": "獠牙猪", "template": "elves/pig3.png", "role": "sacrifice"},
     {"name": "獭", "template": "elves/otter2.png", "role": "sacrifice"},
-    {"name": "权杖", "template": "elves/scepter3.png", "role": "reserve"}
+    {"name": "权杖", "template": "elves/scepter3.png", "role": "reserve", "switch_sleep": 10}
   ]
 }

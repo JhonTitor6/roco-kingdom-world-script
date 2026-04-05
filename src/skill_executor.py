@@ -11,12 +11,13 @@ class SkillExecutor:
     def __init__(self, controller: GameController):
         self.ctrl = controller
 
-    def cast_skill(self, skill_name: str, timeout: float = 10) -> bool:
+    def cast_skill(self, skill_name: str, timeout: float = 10, elf=None) -> bool:
         """释放技能（通过识图点击技能栏）
 
         Args:
             skill_name: 技能名 (comet / defense)
             timeout: 查找技能图标的超时时间（秒）
+            elf: 精灵配置 dict（可选，用于特殊精灵如权杖的延迟处理）
 
         Returns:
             是否成功
@@ -30,7 +31,27 @@ class SkillExecutor:
             logger.error(f"未知技能: {skill_name}")
             return False
 
-        pos = self.ctrl.find_image_with_timeout(template, timeout=timeout, similarity=0.8)
+        # 先这样，懒得优化了
+        # 权杖（reserve）等特殊精灵：技能出现后需等待一段时间才能点击，且位置会变化
+        is_reserve = elf is not None and elf.get("role") == "reserve"
+        if is_reserve:
+            # 等待技能稳定可点击
+            time.sleep(3)
+            # 重试几次，每次重新查找位置（技能会换位置）
+            for attempt in range(3):
+                pos = self.ctrl.find_image_with_timeout(template, timeout=3, similarity=0.7)
+                if pos is not None:
+                    time.sleep(1)
+                    self.ctrl.click_at(*pos)
+                    logger.info(f"释放技能: {skill_name} (权杖第{attempt + 1}次尝试)")
+                    wait_time = self.ctrl.settings.get("skill_wait_after_cast", 10)
+                    time.sleep(wait_time)
+                    return True
+                time.sleep(1)
+            logger.warning(f"权杖技能图标未找到: {skill_name}")
+            return False
+
+        pos = self.ctrl.find_image_with_timeout(template, timeout=timeout, similarity=0.7)
         if pos is None:
             logger.warning(f"技能图标未找到: {skill_name}")
             return False
@@ -49,6 +70,7 @@ class SkillExecutor:
         if pos is not None:
             self.ctrl.click_at(*pos)
             logger.info("聚能")
+            time.sleep(8)
         else:
             logger.warning("聚能图像未找到")
 
@@ -56,7 +78,7 @@ class SkillExecutor:
         """防御（识图点击）"""
         self.cast_skill("defense")
 
-    def switch_to_elf(self, elf) -> bool:
+    def switch_to_elf(self, elf, switch_panel_timeout=8) -> bool:
         """切换到指定精灵
 
         Args:
@@ -65,7 +87,7 @@ class SkillExecutor:
         Returns:
             是否成功
         """
-        if not self.wait_for_switch_panel(timeout=5):
+        if not self.wait_for_switch_panel(timeout=switch_panel_timeout):
             logger.warning("切换面板未出现")
             # 等待可释放技能（聚能图像出现）
             if not self.wait_for_releasable_skill(timeout=30):
@@ -83,8 +105,10 @@ class SkillExecutor:
             time.sleep(2)
 
 
-        # 识图查找目标精灵
-        pos = self.ctrl.find_image_with_timeout(elf["template"], timeout=3, similarity=0.8)
+        # 识图查找目标精灵（限制区域）
+        pos = self.ctrl.find_image_with_timeout(
+            elf["template"], timeout=3, similarity=0.8, x0=251, y0=320, x1=554, y1=1113
+        )
         if pos is None:
             logger.warning(f"切换精灵失败: {elf['name']}")
             return False
@@ -93,9 +117,8 @@ class SkillExecutor:
         time.sleep(0.5)
         self.ctrl.press_key("space")
         logger.info(f"切换精灵: {elf['name']}")
-        time.sleep(5)
-        if elf['name'] == '权杖':
-            time.sleep(4)
+        switch_sleep = elf.get("switch_sleep", 5)
+        time.sleep(switch_sleep)
         return True
 
     def wait_for_releasable_skill(self, timeout: float = 10) -> bool:

@@ -154,13 +154,13 @@ class BattleFlow:
 
         # 1. sacrifice 精灵送死
         for elf in self.elf_mgr.sacrifice_elves:
-            self.skill.switch_to_elf(elf)
+            self.skill.switch_to_elf(elf, switch_panel_timeout=30)
             logger.info(f"送死: {elf['name']}")
             self.skill.cast_skill("comet")
 
         # 2. 切换到 reserve
         logger.info("切换到 reserve 精灵")
-        self.skill.switch_to_elf(self.elf_mgr.reserve_elf)
+        self.skill.switch_to_elf(self.elf_mgr.reserve_elf, switch_panel_timeout=30)
 
         # 3. reserve 执行最终动作（循环直到战斗结束）
         logger.info("Reserve 精灵防御/聚能循环")
@@ -168,9 +168,8 @@ class BattleFlow:
             # 检测是否有可释放技能（聚能图标）
             if self.is_skill_releasable():
                 # 尝试释放防御，如果失败（冷却中）则聚能
-                if not self.skill.cast_skill("defense", timeout=1):
+                if not self.skill.cast_skill("defense", timeout=1, elf=self.elf_mgr.reserve_elf):
                     self.skill.press_energy()
-                time.sleep(5)
 
             # 检测战斗是否结束
             if self.ctrl.find_image("battle/battle_end.png", similarity=0.8) != (-1, -1):
@@ -191,9 +190,6 @@ class BattleFlow:
             if self.is_skill_releasable():
                 if not self.skill.cast_skill("defense", timeout=1):
                     self.skill.press_energy()
-                    time.sleep(5)
-            else:
-                time.sleep(0.3)
 
             # 检测敌方 inactive 数量
             inactive_count = self.count_inactive_in_region(enemy_region)
@@ -201,22 +197,20 @@ class BattleFlow:
                 logger.info(f"敌方已送死达到 {inactive_count} 只，退出循环")
                 break
 
-            time.sleep(0.5)
-
-        time.sleep(5)
         # 2. 切换到 reserve
         logger.info("切换到 reserve 精灵")
-        self.skill.switch_to_elf(self.elf_mgr.reserve_elf)
+        self.skill.switch_to_elf(self.elf_mgr.reserve_elf, switch_panel_timeout=1)
 
         # 3. reserve 送死
-        self.skill.cast_skill("comet")
+        self.skill.cast_skill("comet", elf=self.elf_mgr.reserve_elf)
 
         # 4. sacrifice 精灵送死
         for elf in self.elf_mgr.sacrifice_elves:
-            self.skill.switch_to_elf(elf)
+            self.skill.switch_to_elf(elf, switch_panel_timeout=30)
             logger.info(f"送死: {elf['name']}")
             self.skill.cast_skill("comet", timeout=60)
 
+        self.skill.switch_to_elf(self.elf_mgr.final_elf, switch_panel_timeout=30)
         # 5. final 送死
         logger.info("Final 精灵送死")
         self.skill.cast_skill("comet")

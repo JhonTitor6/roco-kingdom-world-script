@@ -30,12 +30,24 @@ class GameController:
         """获取当前截图"""
         return self.win.image_finder.screenshot_cache
 
-    def _find_single_image(self, template_path: str, similarity: float = None) -> Tuple[int, int]:
+    def _find_single_image(
+        self,
+        template_path: str,
+        similarity: float = None,
+        x0: int = 0,
+        y0: int = 0,
+        x1: int = 99999,
+        y1: int = 99999,
+    ) -> Tuple[int, int]:
         """查找单个模板图像
 
         Args:
             template_path: 相对于 TEMPLATE_BASE 的路径
             similarity: 相似度阈值
+            x0: 区域左上角x坐标
+            y0: 区域左上角y坐标
+            x1: 区域右下角x坐标
+            y1: 区域右下角y坐标
 
         Returns:
             (x, y) 坐标，未找到返回 (-1, -1)
@@ -44,8 +56,7 @@ class GameController:
         full_path = self.TEMPLATE_BASE / template_path
 
         result = self.win.image_finder.bg_find_pic_by_cache(
-            str(full_path),
-            similarity=sim
+            str(full_path), x0, y0, x1, y1, similarity=sim
         )
 
         if result == (-1, -1):
@@ -55,12 +66,24 @@ class GameController:
         logger.debug(f"图像找到: {template_path} @ {result}")
         return result
 
-    def find_image(self, template, similarity: float = None) -> Tuple[int, int]:
+    def find_image(
+        self,
+        template,
+        similarity: float = None,
+        x0: int = 0,
+        y0: int = 0,
+        x1: int = 99999,
+        y1: int = 99999,
+    ) -> Tuple[int, int]:
         """在截图缓存中查找图像
 
         Args:
             template: 相对于 TEMPLATE_BASE 的路径，支持单字符串或字符串列表
             similarity: 相似度阈值
+            x0: 区域左上角x坐标
+            y0: 区域左上角y坐标
+            x1: 区域右下角x坐标
+            y1: 区域右下角y坐标
 
         Returns:
             (x, y) 坐标，未找到返回 (-1, -1)
@@ -72,13 +95,20 @@ class GameController:
         templates = [template] if isinstance(template, str) else template
 
         for t in templates:
-            pos = self._find_single_image(t, similarity)
+            pos = self._find_single_image(t, similarity, x0, y0, x1, y1)
             if pos != (-1, -1):
                 return pos
         return -1, -1
 
     def find_image_with_timeout(
-        self, template, timeout: float = 5, similarity: float = None
+        self,
+        template,
+        timeout: float = 5,
+        similarity: float = None,
+        x0: int = 0,
+        y0: int = 0,
+        x1: int = 99999,
+        y1: int = 99999,
     ) -> Optional[Tuple[int, int]]:
         """等待图像出现
 
@@ -86,13 +116,17 @@ class GameController:
             template: 模板路径，支持单字符串或字符串列表
             timeout: 超时时间（秒）
             similarity: 相似度
+            x0: 区域左上角x坐标
+            y0: 区域左上角y坐标
+            x1: 区域右下角x坐标
+            y1: 区域右下角y坐标
 
         Returns:
             (x, y) 或 None
         """
         start = time.time()
         while time.time() - start < timeout:
-            pos = self.find_image(template, similarity)
+            pos = self.find_image(template, similarity, x0, y0, x1, y1)
             if pos != (-1, -1):
                 return pos
             time.sleep(0.3)

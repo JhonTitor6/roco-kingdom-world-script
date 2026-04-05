@@ -3,8 +3,6 @@
   "skill_wait_after_cast": 10,
   "timeouts": {
     "battle_start": 60,
-    "skill_cast": 5,
-    "switch_elf": 3,
     "battle_end": 20
   },
   "loop_count": 10,
