@@ -2,6 +2,8 @@
 import time
 from loguru import logger
 
+from src.utils import random_sleep
+
 from src.controller import GameController
 
 
@@ -36,18 +38,18 @@ class SkillExecutor:
         is_reserve = elf is not None and elf.get("role") == "reserve"
         if is_reserve:
             # 等待技能稳定可点击
-            time.sleep(3)
+            random_sleep(3)
             # 重试几次，每次重新查找位置（技能会换位置）
             for attempt in range(3):
                 pos = self.ctrl.find_image_with_timeout(template, timeout=3, similarity=0.7)
                 if pos is not None:
-                    time.sleep(1)
+                    random_sleep(1)
                     self.ctrl.click_at(*pos)
                     logger.info(f"释放技能: {skill_name} (权杖第{attempt + 1}次尝试)")
                     wait_time = self.ctrl.settings.get("skill_wait_after_cast", 10)
-                    time.sleep(wait_time)
+                    random_sleep(wait_time)
                     return True
-                time.sleep(1)
+                random_sleep(1)
             logger.warning(f"权杖技能图标未找到: {skill_name}")
             return False
 
@@ -55,13 +57,13 @@ class SkillExecutor:
         if pos is None:
             logger.warning(f"技能图标未找到: {skill_name}")
             return False
-        time.sleep(1)
+        random_sleep(1)
         self.ctrl.click_at(*pos)
         logger.info(f"释放技能: {skill_name}")
 
         # 技能释放后等待（可配置）
         wait_time = self.ctrl.settings.get("skill_wait_after_cast", 10)
-        time.sleep(wait_time)
+        random_sleep(wait_time)
         return True
 
     def press_energy(self) -> None:
@@ -70,7 +72,7 @@ class SkillExecutor:
         if pos is not None:
             self.ctrl.click_at(*pos)
             logger.info("聚能")
-            time.sleep(8)
+            random_sleep(8)
         else:
             logger.warning("聚能图像未找到")
 
@@ -93,7 +95,7 @@ class SkillExecutor:
             if not self.wait_for_releasable_skill(timeout=30):
                 logger.warning("等待可释放技能超时")
                 return False
-            time.sleep(2)
+            random_sleep(2)
             logger.info("打开精灵切换面板")
             # 识图点击 switch.png 打开切换面板
             pos = self.ctrl.find_image_with_timeout("skills/switch.png", timeout=5, similarity=0.8)
@@ -102,7 +104,7 @@ class SkillExecutor:
                 logger.info("打开切换面板")
             else:
                 logger.warning("切换面板图标未找到")
-            time.sleep(2)
+            random_sleep(2)
 
 
         # 识图查找目标精灵（限制区域）
@@ -114,11 +116,13 @@ class SkillExecutor:
             return False
 
         self.ctrl.click_at(*pos)
-        time.sleep(0.5)
+        random_sleep(0.5)
+        self.ctrl.press_key("space")
+        random_sleep(0.05)
         self.ctrl.press_key("space")
         logger.info(f"切换精灵: {elf['name']}")
         switch_sleep = elf.get("switch_sleep", 5)
-        time.sleep(switch_sleep)
+        random_sleep(switch_sleep)
         return True
 
     def wait_for_releasable_skill(self, timeout: float = 10) -> bool:
@@ -130,6 +134,8 @@ class SkillExecutor:
         Returns:
             是否检测到聚能图像
         """
+        # TODO：先检测 "等待对方思考" 则sleep
+
         template = "skills/energy.png"
         start = time.time()
         while time.time() - start < timeout:
@@ -138,7 +144,7 @@ class SkillExecutor:
             if pos != (-1, -1):
                 logger.debug(f"检测到可释放技能: {template} @ {pos}")
                 return True
-            time.sleep(0.3)
+            random_sleep(0.3)
         logger.warning(f"等待可释放技能超时: {template}")
         return False
 
@@ -184,5 +190,5 @@ class SkillExecutor:
                 if pos != (-1, -1) and pos[0] < 600:  # 左侧区域
                     logger.debug(f"检测到切换面板: {elf_template} @ {pos}")
                     return True
-            time.sleep(0.2)
+            random_sleep(0.2)
         return False

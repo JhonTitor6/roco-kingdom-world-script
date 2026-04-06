@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Optional, Tuple, List, Union
 import time
 
+from src.utils import random_sleep
 from loguru import logger
 from win_util import WinController
 from win_util.mouse import left_click
@@ -129,7 +130,7 @@ class GameController:
             pos = self.find_image(template, similarity, x0, y0, x1, y1)
             if pos != (-1, -1):
                 return pos
-            time.sleep(0.3)
+            random_sleep(0.3)
         return None
 
     def wait_for_image_disappear(
@@ -141,7 +142,7 @@ class GameController:
             pos = self.find_image(template, similarity)
             if pos == (-1, -1):
                 return True
-            time.sleep(0.3)
+            random_sleep(0.3)
         return False
 
     def click_at(self, x: int, y: int, x_range: int = 10, y_range: int = 10) -> bool:
