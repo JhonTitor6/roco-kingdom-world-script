@@ -3,7 +3,7 @@
   "skill_wait_after_cast": 10,
   "timeouts": {
     "battle_start": 60,
-    "battle_end": 20
+    "battle_end": 30
   },
   "loop_count": 10,
   "screenshot_debug": "on_failure",

@@ -9,6 +9,7 @@ __pycache__/
 .trae
 skills-lock.json
 .idea
+images
 
 # Logs
 logs/

@@ -199,6 +199,43 @@ class TestSkillTemplates:
         assert found, "defense 在所有截图中都未匹配"
 
 
+class TestBattleEndTemplate:
+    """battle_end 模板测试"""
+
+    def test_battle_end_recognition(self, project_root, templates_dir):
+        """测试 battle_end 模板在指定截图中的识别效果"""
+        screenshot_path = project_root / "images" / "洛克王国：世界   2026_4_6 14_43_05.png"
+        if not screenshot_path.exists():
+            pytest.skip(f"截图不存在: {screenshot_path}")
+
+        template_path = templates_dir / "battle" / "battle_end.png"
+        if not template_path.exists():
+            pytest.skip(f"battle_end 模板不存在: {template_path}")
+
+        # 加载截图和模板
+        sc_img = imread_unicode(screenshot_path)
+        template = cv2.imread(str(template_path))
+        assert template is not None, f"无法加载模板: {template_path}"
+
+        # 执行模板匹配
+        result = cv2.matchTemplate(sc_img, template, cv2.TM_CCORR_NORMED)
+        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+
+        h, w = template.shape[:2]
+        center_x = max_loc[0] + w // 2
+        center_y = max_loc[1] + h // 2
+
+        print(f"\nbattle_end 识别结果:")
+        print(f"  截图: {screenshot_path.name}")
+        print(f"  模板尺寸: {w}x{h}")
+        print(f"  匹配位置: ({center_x}, {center_y})")
+        print(f"  相似度: {max_val:.4f}")
+
+        assert max_val >= 0.6, f"相似度 {max_val:.4f} 低于阈值 0.6"
+        assert 0 <= center_x <= sc_img.shape[1], f"x坐标异常: {center_x}"
+        assert 0 <= center_y <= sc_img.shape[0], f"y坐标异常: {center_y}"
+
+
 class TestPopupTemplates:
     """弹窗相关模板测试"""
 
