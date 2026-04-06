@@ -108,3 +108,27 @@ class ElfManager:
             # 对方先手: reserve -> sacrifice -> sacrifice -> final
             order = [self.reserve_elf] + self.sacrifice_elves + [self.final_elf]
         return order
+
+    def get_selfdestruct_templates(self) -> List[str]:
+        """获取自爆流敌方精灵的头像模板列表"""
+        return self.config.get("selfdestruct_enemies", [])
+
+    def get_sacrifice_template(self) -> str:
+        """获取送死精灵的模板路径
+
+        Returns:
+            送死精灵的模板路径（第一个 sacrifice 精灵）
+        """
+        if not self._sacrifice_elves:
+            raise ValueError("配置中未找到 sacrifice 精灵")
+        return self._sacrifice_elves[0]["template"]
+
+    def get_reserve_template(self) -> str:
+        """获取备用精灵的模板路径
+
+        Returns:
+            备用精灵的模板路径
+        """
+        if not self._reserve_elf:
+            raise ValueError("配置中未找到 reserve 精灵")
+        return self._reserve_elf["template"]

@@ -1,153 +1,63 @@
-"""事件分发器"""
-from src.state_machine import BattleState
-from src.handlers import (
-    StartChallengeHandler,
-    SelectElfHandler,
-    ConfirmHandler,
-    BattleHandler,
-    BattleEndHandler,
-    RetryHandler,
-    ErrorHandler,
-)
+from typing import Dict
+from loguru import logger
 
-
-# 状态到处理器的映射
-HANDLERS = {
-    BattleState.START_CHALLENGE: StartChallengeHandler,
-    BattleState.SELECT_FIRST: SelectElfHandler,
-    BattleState.CONFIRM_FIRST: ConfirmHandler,
-    BattleState.BATTLE_START: BattleHandler,
-    BattleState.SPEED_CHECK: BattleHandler,
-    BattleState.SACRIFICE_PHASE: BattleHandler,
-    BattleState.FINAL_PHASE: BattleHandler,
-    BattleState.BATTLE_END: BattleEndHandler,
-    BattleState.RETRY: RetryHandler,
-    BattleState.QUIT: RetryHandler,
-    BattleState.ERROR: ErrorHandler,
-}
+from src.context import GameContext
+from src.detector import EventDetector
+from src.events import Events
+from src.handlers.base_handler import Handler
 
 
 class EventDispatcher:
-    """事件分发器: 主循环 + 图像检测 + 处理器调用"""
+    """事件分发器（主循环）
 
-    # 区域定义
-    ALLY_REGION = (0, 0, 700, 320)
-    ENEMY_REGION = (2000, 0, 2560, 320)
+    协调 EventDetector、Handler 和 GameContext。
+    """
 
     def __init__(
         self,
         controller,
         elf_manager,
         skill_executor,
-        settings: dict
+        config: dict
     ):
         self.controller = controller
         self.elf_manager = elf_manager
         self.skill_executor = skill_executor
-        self.settings = settings
-        self.state = BattleState.IDLE
+        self.context = GameContext(dispatcher=self)
+        self.detector = EventDetector(controller, config)
+        self.handlers: Dict[Events, Handler] = {}
+        self.running = False
+        logger.info("EventDispatcher 初始化完成")
 
-    def run(self, loop_count: int) -> None:
-        """运行主循环"""
-        for i in range(loop_count):
-            # 重置 flow_type（每轮重新检测速度）
-            self._flow_type = None
+    def register_handler(self, event: Events, handler: Handler) -> None:
+        """注册事件处理器
 
-            # 1. 自启动检测（仅第一次）
-            if i == 0:
-                self.state = self._auto_detect_initial_state()
-            else:
-                self.state = BattleState.IDLE
+        Args:
+            event: 事件
+            handler: 处理器实例
+        """
+        self.handlers[event] = handler
+        logger.debug(f"注册处理器: {event.value} -> {handler.__class__.__name__}")
 
-            # 2. 主循环
-            while not self._is_terminal_state():
-                # 捕获画面
-                self.controller.capture()
+    def run(self) -> None:
+        """运行主循环
 
-                # 获取当前状态的处理器并执行
-                handler_class = HANDLERS.get(self.state)
-                if handler_class:
-                    handler = handler_class(self)
-                    if not handler.handle():
-                        # Handler 返回 False 进入 ERROR 状态
-                        self.state = BattleState.ERROR
-                        break
+        持续检测事件并处理，直到 stop() 被调用。
+        """
+        logger.info("EventDispatcher 主循环开始")
+        self.running = True
+        while self.running:
+            # 每轮只截一次图，所有事件检测复用同一张截图
+            self.controller.capture()
+            detected = self.detector.scan_all()
+            for detected_event in detected:
+                handler = self.handlers.get(detected_event.event)
+                if handler:
+                    logger.debug(f"触发事件: {detected_event.event.value} @ {detected_event.position} -> {handler.__class__.__name__}")
+                    handler.handle(self.context, detected_event.position)
+        logger.info("EventDispatcher 主循环结束")
 
-                # 短暂休眠
-                self._sleep(0.3)
-
-    def _is_terminal_state(self) -> bool:
-        """判断是否为终止状态"""
-        return self.state == BattleState.QUIT
-
-    def _sleep(self, seconds: float) -> None:
-        """休眠（复用现有 random_sleep）"""
-        from src.utils import random_sleep
-        random_sleep(seconds)
-
-    def _auto_detect_initial_state(self) -> BattleState:
-        """自启动检测当前游戏画面状态"""
-        self.controller.capture()
-
-        # 按优先级检测
-        if self.controller.find_image("battle/battle_end.png", similarity=0.9) != (-1, -1):
-            return BattleState.BATTLE_END
-        if self.controller.find_image("battle/retry.png", similarity=0.8) != (-1, -1):
-            return BattleState.RETRY
-        if self.controller.find_image("battle/opponent_dont_want_to_retry.png", similarity=0.8) != (-1, -1):
-            return BattleState.QUIT
-        if self.controller.find_image("battle/start_challenge.png", similarity=0.8) != (-1, -1):
-            return BattleState.START_CHALLENGE
-        if self.controller.find_image("battle/confirm_lineups.png", similarity=0.8) != (-1, -1):
-            return BattleState.SELECT_FIRST
-
-        # comet.png 存在 → 战斗中，根据 dot 推断
-        if self.controller.find_image("skills/comet.png", similarity=0.8) != (-1, -1):
-            ally = self._count_inactive_ally()
-            enemy = self._count_inactive_enemy()
-            if ally == 0 and enemy == 0:
-                return BattleState.SPEED_CHECK
-            if ally >= 1:
-                # faster 流程（我方已送死 >= 1）
-                self._set_flow_type("faster")
-                return BattleState.SACRIFICE_PHASE
-            if ally == 0 and enemy >= 1:
-                # slower 流程中途
-                self._set_flow_type("slower")
-                return BattleState.SACRIFICE_PHASE
-            if ally == 0 and enemy >= 3:
-                # 敌方已送死3只，我方未动 → FINAL_PHASE
-                return BattleState.FINAL_PHASE
-
-        return BattleState.IDLE
-
-    def _count_inactive_ally(self) -> int:
-        """统计我方 inactive dots"""
-        dots = self.controller.find_images_all(
-            "dots/dot_inactive.png",
-            similarity=0.8,
-            x0=self.ALLY_REGION[0], y0=self.ALLY_REGION[1],
-            x1=self.ALLY_REGION[2], y1=self.ALLY_REGION[3]
-        )
-        return len(dots)
-
-    def _count_inactive_enemy(self) -> int:
-        """统计敌方 inactive dots"""
-        dots = self.controller.find_images_all(
-            "dots/dot_inactive.png",
-            similarity=0.8,
-            x0=self.ENEMY_REGION[0], y0=self.ENEMY_REGION[1],
-            x1=self.ENEMY_REGION[2], y1=self.ENEMY_REGION[3]
-        )
-        return len(dots)
-
-    @property
-    def flow_type(self):
-        """获取流程类型"""
-        return self._flow_type
-
-    def _set_flow_type(self, flow_type: str) -> None:
-        """设置流程类型（供中途启动时使用）"""
-        # FlowType 枚举需要从 battle handler 导入
-        from src.handlers.battle import FlowType
-        self._flow_type = FlowType.FASTER if flow_type == "faster" else FlowType.SLOWER
+    def stop(self) -> None:
+        """停止主循环"""
+        logger.info("收到停止信号")
+        self.running = False

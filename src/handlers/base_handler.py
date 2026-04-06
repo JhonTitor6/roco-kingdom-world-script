@@ -1,16 +1,21 @@
-"""Handler 基类"""
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Tuple, Optional
 
-from src.state_machine import BattleState
+if TYPE_CHECKING:
+    from src.event_dispatcher import EventDispatcher
+    from src.context import GameContext
 
 
 class Handler(ABC):
-    """处理器基类
+    """事件处理器基类
 
-    每个 Handler 只处理特定状态，通过 EventDispatcher 按状态分发。
+    所有事件处理器必须继承此类并实现 handle 方法。
+
+    Args:
+        dispatcher: EventDispatcher 引用，用于访问 controller 等依赖
     """
 
-    def __init__(self, dispatcher: "EventDispatcher"):
+    def __init__(self, dispatcher: "EventDispatcher") -> None:
         self.dispatcher = dispatcher
 
     @property
@@ -29,14 +34,11 @@ class Handler(ABC):
         return self.dispatcher.skill_executor
 
     @abstractmethod
-    def handle(self) -> bool:
-        """处理当前状态的逻辑，返回是否继续循环
+    def handle(self, ctx: "GameContext", position: Optional[Tuple[int, int]] = None) -> None:
+        """处理事件
 
-        Returns:
-            True=继续循环，False=进入 ERROR 状态
+        Args:
+            ctx: 游戏共享状态上下文
+            position: 检测到的图像坐标（可选）
         """
         pass
-
-    def transition(self, new_state: BattleState) -> None:
-        """切换状态"""
-        self.dispatcher.state = new_state

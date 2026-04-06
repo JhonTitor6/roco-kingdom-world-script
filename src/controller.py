@@ -75,6 +75,7 @@ class GameController:
         y0: int = 0,
         x1: int = 99999,
         y1: int = 99999,
+        _capture: bool = True,
     ) -> Tuple[int, int]:
         """在截图缓存中查找图像
 
@@ -85,12 +86,14 @@ class GameController:
             y0: 区域左上角y坐标
             x1: 区域右下角x坐标
             y1: 区域右下角y坐标
+            _capture: 是否在查找前更新截图，默认 True
 
         Returns:
             (x, y) 坐标，未找到返回 (-1, -1)
         """
         # 更新截图
-        self.capture()
+        if _capture:
+            self.capture()
 
         # 兼容单字符串和列表
         templates = [template] if isinstance(template, str) else template

@@ -11,5 +11,6 @@
   "window": {
     "class_name": "UnrealWindow",
     "title": "洛克王国：世界"
-  }
+  },
+  "enemy_region": [2090, 14, 2273, 181]
 }

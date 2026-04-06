@@ -13,7 +13,7 @@ class SkillExecutor:
     def __init__(self, controller: GameController):
         self.ctrl = controller
 
-    def cast_skill(self, skill_name: str, timeout: float = 10, elf=None) -> bool:
+    def cast_skill(self, skill_name: str, timeout: float = 1, elf=None) -> bool:
         """释放技能（通过识图点击技能栏）
 
         Args:
@@ -117,9 +117,7 @@ class SkillExecutor:
 
         self.ctrl.click_at(*pos)
         random_sleep(0.5)
-        self.ctrl.press_key("space")
-        random_sleep(0.05)
-        self.ctrl.press_key("space")
+        self.ctrl.click_at(1543, 956)
         logger.info(f"切换精灵: {elf['name']}")
         switch_sleep = elf.get("switch_sleep", 5)
         random_sleep(switch_sleep)
@@ -169,6 +167,22 @@ class SkillExecutor:
     def confirm_selection(self) -> bool:
         """确认选择"""
         return self.ctrl.find_and_click_with_timeout("popup/confirm.png", timeout=5)
+
+    def escape_battle(self) -> bool:
+        """执行逃跑操作：点击 escape.png → confirm.png
+
+        Returns:
+            是否成功
+        """
+        if not self.ctrl.find_and_click_with_timeout("skills/escape.png", timeout=5, similarity=0.8):
+            logger.warning("逃跑图标未找到")
+            return False
+        random_sleep(0.5)
+        if not self.ctrl.find_and_click_with_timeout("popup/confirm.png", timeout=5, similarity=0.8):
+            logger.warning("逃跑确认按钮未找到")
+            return False
+        logger.info("执行逃跑")
+        return True
 
     def wait_for_switch_panel(self, timeout: float = 3) -> bool:
         """等待切换面板出现 - 通过检测精灵头像是否在左侧区域

@@ -24,38 +24,49 @@ pytest tests/integration/test_dot_detection.py -v
 
 ## 架构
 
+### 事件驱动架构（新版）
+
 ```
-main.py                  # 程序入口，初始化组件并运行主循环
+main.py                  # 程序入口，调用 setup_logger() 初始化日志
 ├── src/
-│   ├── state_machine.py # 战斗状态机 (BattleStateMachine)
-│   │                     # 状态: IDLE → START_CHALLENGE → SPEED_CHECK → SACRIFICE_PHASE → BATTLE_END
-│   ├── battle_flow.py   # 战斗流程控制 (BattleFlow)
-│   │                     # 负责进入战斗、速度检测、送死序列、结束处理
-│   ├── controller.py    # 游戏控制器 (GameController)
-│   │                     # 封装 win_util，提供找图/点击/键盘/OCR
-│   ├── elf_manager.py   # 精灵管理器 (ElfManager)
-│   │                     # 管理精灵配置，按角色(final/sacrifice/reserve)分类
-│   ├── skill_executor.py # 技能执行器 (SkillExecutor)
-│   │                     # 释放技能(彗星/防御)、切换精灵、聚能
-│   ├── window.py        # 窗口查找 (find_window)
-│   ├── logger.py        # 日志配置 (loguru)
-│   └── exceptions.py    # 自定义异常
-├── win_util/            # Windows UI 自动化工具（本地依赖）
-│   ├── controller.py    # WinController 整合图像识别/键鼠控制/OCR
-│   ├── image.py         # ImageFinder 图像识别
-│   ├── mouse.py         # MouseController 鼠标控制
-│   ├── keyboard.py      # KeyboardController 键盘控制
-│   └── ocr.py           # CommonOcr 文字识别
-├── config/
-│   ├── settings.json    # 主配置（超时、相似度、日志级别）
-│   └── elves.json       # 精灵配置（template 支持单字符串或数组）
-└── assets/templates/   # 图像识别模板
-    ├── battle/          # 战斗相关 (start_challenge, battle_end, retry)
-    ├── skills/          # 技能图标 (comet, defense)
-    ├── elves/           # 精灵头像 (tree3, otter2, pig3, scepter3)
-    ├── dots/            # 圆点状态 (dot_active, dot_inactive)
-    └── popup/           # 弹窗 (confirm, insufficient)
+│   ├── events.py       # Events 枚举（12 个事件类型）
+│   ├── event_config.py # EventConfig 数据类
+│   ├── registry.py     # EventRegistry 事件注册表
+│   ├── context.py      # GameContext 共享状态
+│   ├── detector.py     # EventDetector 图像检测引擎
+│   ├── event_dispatcher.py # 主循环（事件驱动）
+│   └── handlers/
+│       ├── base_handler.py      # Handler 基类
+│       ├── comet.py              # 彗星技能
+│       ├── defense.py            # 防御技能
+│       ├── battle_end.py         # 战斗结束
+│       ├── start_challenge.py    # 开始挑战
+│       ├── confirm.py            # 确认
+│       ├── retry.py              # 再次切磋
+│       ├── switch_elf.py          # 切换精灵
+│       ├── dots_changed.py       # 圆点变化
+│       ├── speed_check.py        # 速度检测
+│       ├── enemy_avatar.py       # 敌方精灵头像
+│       └── enemy_self_destruct.py # 敌方自爆流
 ```
+
+### SkillExecutor 方法
+- `cast_skill("comet")` - 释放彗星技能
+- `press_defense()` - 释放防御技能
+- `escape_battle()` - 执行逃跑（点击 escape.png → confirm.png）
+- `switch_to_elf(elf)` - 切换精灵
+- `press_energy()` - 聚能
+
+### 重要初始化
+- `main.py` 必须调用 `setup_logger()` 启用日志文件输出
+- `controller.elf_manager = elf_manager` - EventDetector 依赖此引用
+
+### 旧架构（待废弃）
+- `state_machine.py` - 战斗状态机
+- `battle_flow.py` - 战斗流程控制
+- `handlers/battle.py` - 旧战斗 Handler
+- `handlers/select_elf.py` - 旧选精灵 Handler
+- `handlers/error.py` - 旧错误 Handler
 
 ## 核心模块说明
 
@@ -94,3 +105,8 @@ main.py                  # 程序入口，初始化组件并运行主循环
 - 后台点击不生效时使用前台点击 `left_click`
 - 弹窗确认按钮点击 `confirm.png` 模板位置，而非弹窗本身
 - 精灵面板切换无明确图标，用左侧区域(x<600)精灵头像检测替代
+- `setup_logger()` 只在 `main.py` 中调用一次，不要在模块中重复初始化
+
+## 重要
+
+- 在我没下指令前，禁止直接 push 代码

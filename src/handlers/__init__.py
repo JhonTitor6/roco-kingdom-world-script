@@ -1,20 +1,28 @@
 """事件处理器包"""
 from src.handlers.base_handler import Handler
-from src.handlers.start_challenge import StartChallengeHandler
-from src.handlers.select_elf import SelectElfHandler
-from src.handlers.confirm import ConfirmHandler
-from src.handlers.battle import BattleHandler
+from src.handlers.comet import CometAppearedHandler
+from src.handlers.defense import DefenseAppearedHandler
 from src.handlers.battle_end import BattleEndHandler
+from src.handlers.start_challenge import StartChallengeHandler
+from src.handlers.confirm import ConfirmHandler
 from src.handlers.retry import RetryHandler
-from src.handlers.error import ErrorHandler
+from src.handlers.switch_elf import SwitchElfHandler
+from src.handlers.dots_changed import DotsChangedHandler
+from src.handlers.speed_check import SpeedCheckHandler
+from src.handlers.enemy_self_destruct import EnemySelfDestructHandler
+from src.handlers.enemy_avatar import EnemyAvatarHandler
 
 __all__ = [
     "Handler",
-    "StartChallengeHandler",
-    "SelectElfHandler",
-    "ConfirmHandler",
-    "BattleHandler",
+    "CometAppearedHandler",
+    "DefenseAppearedHandler",
     "BattleEndHandler",
+    "StartChallengeHandler",
+    "ConfirmHandler",
     "RetryHandler",
-    "ErrorHandler",
+    "SwitchElfHandler",
+    "DotsChangedHandler",
+    "SpeedCheckHandler",
+    "EnemySelfDestructHandler",
+    "EnemyAvatarHandler",
 ]

@@ -1,26 +1,28 @@
+"""防御技能处理器"""
 from src.handlers.base_handler import Handler
 from src.context import GameContext
 from src.events import Events
 from src.registry import EventRegistry
 
 
-class ConfirmHandler(Handler):
-    """确认处理器"""
+class DefenseAppearedHandler(Handler):
+    """防御技能可用处理器"""
 
     def handle(self, ctx: GameContext, position=None) -> None:
-        """处理确认事件
+        """处理防御技能可用事件
 
         Args:
             ctx: 游戏共享状态上下文
             position: 检测到的图像坐标
         """
-        self.ctrl.find_and_click("popup/confirm.png")
+        self.skill.press_defense()
 
 
+# 注册到事件表
 EventRegistry.register(
-    event=Events.CONFIRM,
-    handler_cls=ConfirmHandler,
-    template="popup/confirm.png",
+    event=Events.DEFENSE_APPEARED,
+    handler_cls=DefenseAppearedHandler,
+    template="skills/defense.png",
     region=(0, 0, 2560, 1440),
     similarity=0.8
 )

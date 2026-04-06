@@ -1,5 +1,5 @@
 """战斗状态枚举"""
-from enum import Enum
+from enum import Enum, auto
 
 
 class BattleState(Enum):
@@ -16,3 +16,12 @@ class BattleState(Enum):
     RETRY = "retry"                     # 再次切磋
     QUIT = "quit"                       # 退出（本轮结束）
     ERROR = "error"                     # 错误（异常时触发，重试本轮）
+
+
+class SacrificeSubState(Enum):
+    """SACRIFICE_PHASE 的子状态（供内部决策使用）"""
+    FASTER = auto()                    # FASTER 流程（仅用于标记，不做状态机转换）
+    SLOWER_DEFENSE = auto()            # SLOWER 防御期
+    SLOWER_SAC = auto()                # SLOWER 送死期
+    SLOWER_RESERVE = auto()            # SLOWER 切换 reserve
+    SLOWER_FINAL = auto()              # SLOWER final 送死
