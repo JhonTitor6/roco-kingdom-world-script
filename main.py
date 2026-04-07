@@ -45,7 +45,6 @@ def main():
         RetryHandler,
         SwitchElfHandler,
         DotsChangedHandler,
-        SpeedCheckHandler,
         EnemySelfDestructHandler,
     )
     from src.handlers.enemy_avatar import EnemyAvatarHandler  # noqa: F401

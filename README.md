@@ -205,3 +205,5 @@ pytest tests/integration/test_dot_detection.py -v
 # 运行单元测试
 pytest tests/unit/ -v
 ```
+
+代码还有bug，待优化

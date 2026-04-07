@@ -1,3 +1,5 @@
+import random
+import time
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Tuple, Optional
 
@@ -42,3 +44,8 @@ class Handler(ABC):
             position: 检测到的图像坐标（可选）
         """
         pass
+
+    def random_sleep(self, min_val: float, max_val: float) -> None:
+        """随机等待一段时间"""
+        sleep_seconds = random.uniform(min_val, max_val)
+        time.sleep(sleep_seconds)

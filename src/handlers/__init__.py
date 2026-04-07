@@ -8,7 +8,6 @@ from src.handlers.confirm import ConfirmHandler
 from src.handlers.retry import RetryHandler
 from src.handlers.switch_elf import SwitchElfHandler
 from src.handlers.dots_changed import DotsChangedHandler
-from src.handlers.speed_check import SpeedCheckHandler
 from src.handlers.enemy_self_destruct import EnemySelfDestructHandler
 from src.handlers.enemy_avatar import EnemyAvatarHandler
 
@@ -22,7 +21,6 @@ __all__ = [
     "RetryHandler",
     "SwitchElfHandler",
     "DotsChangedHandler",
-    "SpeedCheckHandler",
     "EnemySelfDestructHandler",
     "EnemyAvatarHandler",
 ]

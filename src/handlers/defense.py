@@ -1,4 +1,5 @@
 """防御技能处理器"""
+import time
 from src.handlers.base_handler import Handler
 from src.context import GameContext
 from src.events import Events
@@ -15,7 +16,12 @@ class DefenseAppearedHandler(Handler):
             ctx: 游戏共享状态上下文
             position: 检测到的图像坐标
         """
-        self.skill.press_defense()
+        if ctx.is_slower() and ctx.enemy_inactive >= 3:
+            return
+        if not ctx.is_slower() and ctx.my_inactive < 3:
+            return
+        self.ctrl.click_at(*position)
+        time.sleep(7)
 
 
 # 注册到事件表

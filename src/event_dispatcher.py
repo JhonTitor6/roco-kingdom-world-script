@@ -2,7 +2,9 @@ from typing import Dict
 from loguru import logger
 
 from src.context import GameContext
+from src.controller import GameController
 from src.detector import EventDetector
+from src.elf_manager import ElfManager
 from src.events import Events
 from src.handlers.base_handler import Handler
 
@@ -20,8 +22,8 @@ class EventDispatcher:
         skill_executor,
         config: dict
     ):
-        self.controller = controller
-        self.elf_manager = elf_manager
+        self.controller: GameController = controller
+        self.elf_manager: ElfManager = elf_manager
         self.skill_executor = skill_executor
         self.context = GameContext(dispatcher=self)
         self.detector = EventDetector(controller, config)

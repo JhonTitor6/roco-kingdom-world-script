@@ -1,4 +1,6 @@
 """彗星技能处理器"""
+import time
+
 from src.handlers.base_handler import Handler
 from src.context import GameContext
 from src.events import Events
@@ -16,10 +18,12 @@ class CometAppearedHandler(Handler):
             position: 检测到的图像坐标
         """
         # 根据 context 状态决定行为
-        if ctx.is_slower() and ctx.my_inactive == 0 and ctx.enemy_inactive == 1:
-            ctx.set_sacrifice(True)
-
-        self.skill.cast_skill("comet")
+        if ctx.is_slower() and ctx.enemy_inactive < 3:
+            return
+        if not ctx.is_slower() and ctx.my_inactive >= 3:
+            return
+        self.ctrl.click_at(*position)
+        time.sleep(7)
 
 
 # 注册到事件表

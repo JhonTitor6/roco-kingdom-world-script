@@ -17,14 +17,14 @@ class EnemySelfDestructHandler(Handler):
             ctx: 游戏共享状态上下文
             position: 检测到的图像坐标
         """
-        self.skill.escape_battle()
-        self.dispatcher.stop()
+        # self.skill.escape_battle()
+        # self.dispatcher.stop()
 
 
-EventRegistry.register(
-    event=Events.ENEMY_SELF_DESTRUCT,
-    handler_cls=EnemySelfDestructHandler,
-    template=[],  # 动态从 elf_manager 获取
-    region=(2000, 0, 2560, 320),
-    similarity=0.7
-)
+# EventRegistry.register(
+#     event=Events.ENEMY_SELF_DESTRUCT,
+#     handler_cls=EnemySelfDestructHandler,
+#     template=[],  # 动态从 elf_manager 获取
+#     region=(2000, 0, 2560, 320),
+#     similarity=0.7
+# )

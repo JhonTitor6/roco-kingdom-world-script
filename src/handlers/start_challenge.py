@@ -14,7 +14,7 @@ class StartChallengeHandler(Handler):
             ctx: 游戏共享状态上下文
             position: 检测到的图像坐标
         """
-        self.ctrl.find_and_click("battle/start_challenge.png")
+        self.ctrl.click_at(*position)
 
 
 EventRegistry.register(

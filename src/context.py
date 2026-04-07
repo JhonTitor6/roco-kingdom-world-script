@@ -20,7 +20,6 @@ class GameContext:
     """
     dispatcher: "EventDispatcher"
     slower: bool = False
-    sacrifice: bool = False
     my_inactive: int = 0
     enemy_inactive: int = 0
 
@@ -31,10 +30,6 @@ class GameContext:
     def is_slower(self) -> bool:
         """获取 SLOWER 流程标记"""
         return self.slower
-
-    def set_sacrifice(self, value: bool) -> None:
-        """设置 SACRIFICE 阶段标记"""
-        self.sacrifice = value
 
     def is_sacrifice(self) -> bool:
         """获取 SACRIFICE 阶段标记"""
