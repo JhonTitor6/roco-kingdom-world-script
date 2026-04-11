@@ -35,20 +35,8 @@ def main():
     # 将 elf_manager 附加到 controller（EventDetector 期望从 controller 获取）
     controller.elf_manager = elf_manager
 
-    # 2. 导入所有处理器（触发 self-register）
-    from src.handlers import (  # noqa: F401
-        CometAppearedHandler,
-        DefenseAppearedHandler,
-        BattleEndHandler,
-        StartChallengeHandler,
-        ConfirmHandler,
-        RetryHandler,
-        SwitchElfHandler,
-        SelectFirstElfHandler,
-        DotsChangedHandler,
-        EnemySelfDestructHandler,
-    )
-    from src.handlers.enemy_avatar import EnemyAvatarHandler  # noqa: F401
+    # 2. 导入所有处理器（自动发现并 self-register）
+    import src.handlers  # noqa: F401
 
     # 3. 创建事件分发器
     configs = EventRegistry.get_configs()

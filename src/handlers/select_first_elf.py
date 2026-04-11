@@ -23,8 +23,6 @@ class SelectFirstElfHandler(Handler):
 
         random_sleep(1)
 
-        # 切换到 CONFIRM_FIRST 状态
-        self.transition(BattleState.CONFIRM_FIRST)
         return True
 
 
