@@ -1,4 +1,4 @@
-from typing import Union, List, Dict, Type
+from typing import Union, List, Dict, Type, Optional
 from src.events import Events
 from src.event_config import EventConfig
 
@@ -18,11 +18,21 @@ class EventRegistry:
         handler_cls: Type["Handler"],
         template: Union[str, List[str]],
         region: tuple[int, int, int, int],
-        similarity: float = 0.8
+        similarity: float = 0.8,
+        priority: Optional[int] = None
     ) -> None:
-        """注册事件处理器和配置"""
+        """注册事件处理器和配置
+
+        Args:
+            event: 事件类型
+            handler_cls: 处理器类
+            template: 模板路径
+            region: 检测区域
+            similarity: 相似度阈值
+            priority: 优先级，数值越小越先处理，默认 None（最低优先级）
+        """
         cls._handlers[event] = handler_cls
-        cls._configs[event] = EventConfig(template, region, similarity)
+        cls._configs[event] = EventConfig(template, region, similarity, priority)
 
     @classmethod
     def get_handlers(cls) -> Dict[Events, Type["Handler"]]:

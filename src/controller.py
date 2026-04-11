@@ -61,7 +61,7 @@ class GameController:
         )
 
         if result == (-1, -1):
-            logger.debug(f"图像未找到: {template_path}")
+            # logger.debug(f"图像未找到: {template_path}")
             return -1, -1
 
         logger.debug(f"图像找到: {template_path} @ {result}")

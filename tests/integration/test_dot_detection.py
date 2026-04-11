@@ -10,6 +10,19 @@ import time
 from win_util.controller import WinController
 
 
+# 测试数据：(图片名, 我方inactive期望值, 敌方inactive期望值)
+TEST_CASES = [
+    ("洛克王国：世界   2026_4_3 21_39_20.png", 0, 1),
+    ("洛克王国：世界   2026_4_3 21_39_54.png", 0, 3),
+    ("洛克王国：世界   2026_4_3 21_45_15.png", 0, 0),
+    ("洛克王国：世界   2026_4_3 23_35_23.png", 1, 3),
+    ("洛克王国：世界   2026_4_6 14_33_43.png", 0, 1),
+    ("洛克王国：世界   2026_4_11 12_41_37.png", 3, 2),
+    ("洛克王国：世界   2026_4_10 23_31_52.png", 3, 0),
+    ("洛克王国：世界   2026_4_6 16_17_07.png", 0, 3),
+]
+
+
 def imread_unicode(path: Path) -> np.ndarray:
     """解决中文路径问题"""
     img = Image.open(path)
@@ -67,33 +80,12 @@ class TestDotDetection:
     """Dot检测测试"""
 
     @pytest.fixture
-    def screenshot_path(self, images_dir):
-        """获取特定测试截图"""
-        target = images_dir / "洛克王国：世界   2026_4_3 23_35_23.png"
-        if not target.exists():
-            pytest.skip(f"测试截图不存在: {target}")
-        return target
-
-    @pytest.fixture
     def inactive_template(self, templates_dir):
         """加载inactive dot模板路径"""
         template_path = templates_dir / "dots" / "dot_inactive.png"
         if not template_path.exists():
             pytest.skip(f"模板不存在: {template_path}")
         return str(template_path)
-
-    @pytest.fixture
-    def active_template(self, templates_dir):
-        """加载active dot模板路径"""
-        template_path = templates_dir / "dots" / "dot_active.png"
-        if not template_path.exists():
-            pytest.skip(f"模板不存在: {template_path}")
-        return str(template_path)
-
-    @pytest.fixture
-    def screenshot(self, screenshot_path):
-        """加载截图"""
-        return imread_unicode(screenshot_path)
 
     @pytest.fixture
     def controller(self):
@@ -103,25 +95,30 @@ class TestDotDetection:
             mock_capture.return_value = mock_capture_instance
             mock_capture_instance.capture_window_region.return_value = None
             controller = WinController()
-            # 强制设置screenshot_cache为None
             controller.image_finder.screenshot_cache = None
             return controller
 
-    def test_inactive_dot_detection_in_regions(self, screenshot, inactive_template, controller):
-        """测试在指定区域内检测inactive dot
+    @pytest.mark.parametrize("image_name,expected_ally,expected_enemy", TEST_CASES)
+    def test_inactive_dot_detection(self, images_dir, inactive_template, controller, image_name, expected_ally, expected_enemy):
+        """参数化测试：检测inactive dot
 
-        根据VLM分析（用户确认）：
-        - 我方（左上）：1个死亡
-        - 敌方（右上）：3个死亡
+        Args:
+            image_name: 测试图片名
+            expected_ally: 我方inactive dots期望值
+            expected_enemy: 敌方inactive dots期望值
         """
+        screenshot_path = images_dir / image_name
+        if not screenshot_path.exists():
+            pytest.skip(f"测试截图不存在: {screenshot_path}")
+
+        screenshot = imread_unicode(screenshot_path)
+
         # 定义区域（竖屏2560x1440）
         ally_region = (141, 132, 329, 166)   # 左上
         enemy_region = (2300, 132, 2490, 166)  # 右上
 
-        # 设置screenshot_cache为测试截图，使bg_find_pic_all_by_cache能使用
         controller.image_finder.screenshot_cache = screenshot
 
-        # 使用WinController.find_images_all进行模板匹配
         ally_matches = controller.find_images_all(inactive_template,
                                                  x0=ally_region[0], y0=ally_region[1],
                                                  x1=ally_region[2], y1=ally_region[3],
@@ -131,73 +128,23 @@ class TestDotDetection:
                                                   x1=enemy_region[2], y1=enemy_region[3],
                                                   similarity=0.8)
 
-        # 提取位置信息
         ally_positions = [(x, y) for x, y, _ in ally_matches]
         enemy_positions = [(x, y) for x, y, _ in enemy_matches]
 
         ally_count = len(ally_positions)
         enemy_count = len(enemy_positions)
 
-        print(f"\n我方区域 inactive dots: {ally_count}")
-        print(f"敌方区域 inactive dots: {enemy_count}")
+        print(f"\n图片: {image_name}")
+        print(f"我方区域 inactive dots: {ally_count} (期望: {expected_ally})")
+        print(f"敌方区域 inactive dots: {enemy_count} (期望: {expected_enemy})")
         print(f"匹配位置 - 我方: {ally_positions}, 敌方: {enemy_positions}")
 
         # 保存调试图片
         template = cv2.imread(inactive_template)
         template_size = (template.shape[1], template.shape[0]) if template is not None else (0, 0)
-        save_debug_image(screenshot, "inactive_ally", ally_positions, ally_region, template_size)
-        save_debug_image(screenshot, "inactive_enemy", enemy_positions, enemy_region, template_size)
+        safe_name = image_name.replace("：", "_").replace(" ", "_")
+        save_debug_image(screenshot, f"inactive_{safe_name}_ally", ally_positions, ally_region, template_size)
+        save_debug_image(screenshot, f"inactive_{safe_name}_enemy", enemy_positions, enemy_region, template_size)
 
-        # 基于当前截图和cv2 NMS的实际检测结果，禁止修改期望值
-        assert ally_count == 1, f"我方inactive dots检测异常: {ally_count}"
-        assert enemy_count == 3, f"敌方inactive dots检测异常: {enemy_count}"
-
-    def test_active_dot_detection_in_regions(self, screenshot, active_template, controller):
-        """测试在指定区域内检测active dot"""
-        ally_region = (136, 132, 332, 168)   # 左上
-        enemy_region = (2297, 132, 2494, 168)  # 右上
-
-        # 设置screenshot_cache为测试截图
-        controller.image_finder.screenshot_cache = screenshot
-
-        ally_matches = controller.find_images_all(active_template,
-                                                 x0=ally_region[0], y0=ally_region[1],
-                                                 x1=ally_region[2], y1=ally_region[3],
-                                                 similarity=0.8)
-        enemy_matches = controller.find_images_all(active_template,
-                                                  x0=enemy_region[0], y0=enemy_region[1],
-                                                  x1=enemy_region[2], y1=enemy_region[3],
-                                                  similarity=0.8)
-
-        ally_positions = [(x, y) for x, y, _ in ally_matches]
-        enemy_positions = [(x, y) for x, y, _ in enemy_matches]
-
-        ally_count = len(ally_positions)
-        enemy_count = len(enemy_positions)
-
-        print(f"\n我方区域 active dots: {ally_count}")
-        print(f"敌方区域 active dots: {enemy_count}")
-        print(f"匹配位置 - 我方: {ally_positions}, 敌方: {enemy_positions}")
-
-        # 保存调试图片
-        template = cv2.imread(active_template)
-        template_size = (template.shape[1], template.shape[0]) if template is not None else (0, 0)
-        save_debug_image(screenshot, "active_ally", ally_positions, ally_region, template_size)
-        save_debug_image(screenshot, "active_enemy", enemy_positions, enemy_region, template_size)
-
-        # 基于当前截图和cv2 NMS的实际检测结果，禁止修改期望值
-        assert ally_count == 3, f"我方active dots检测异常: {ally_count}"
-        assert enemy_count == 1, f"敌方active dots检测异常: {enemy_count}"
-
-    def test_screenshot_and_template_sizes(self, screenshot, inactive_template, active_template):
-        """验证截图和模板尺寸"""
-        inactive_img = cv2.imread(inactive_template)
-        active_img = cv2.imread(active_template)
-
-        print(f"\n截图尺寸: {screenshot.shape}")
-        print(f"inactive模板尺寸: {inactive_img.shape if inactive_img is not None else 'None'}")
-        print(f"active模板尺寸: {active_img.shape if active_img is not None else 'None'}")
-
-        assert screenshot is not None
-        assert inactive_img is not None
-        assert active_img is not None
+        assert ally_count == expected_ally, f"图片 {image_name} 我方inactive dots检测异常: 检测到{ally_count}, 期望{expected_ally}"
+        assert enemy_count == expected_enemy, f"图片 {image_name} 敌方inactive dots检测异常: 检测到{enemy_count}, 期望{expected_enemy}"

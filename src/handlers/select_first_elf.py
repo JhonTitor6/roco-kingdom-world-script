@@ -3,8 +3,8 @@ from src.context import GameContext
 from src.events import Events
 from src.handlers.base_handler import Handler
 from src.registry import EventRegistry
-from src.state_machine import BattleState
 from src.utils import random_sleep
+from loguru import logger
 
 
 class SelectFirstElfHandler(Handler):
@@ -12,16 +12,22 @@ class SelectFirstElfHandler(Handler):
 
     def handle(self, ctx: GameContext, position=None) -> bool:
         """选择首发精灵（final 精灵）"""
-        # 等待选精灵界面
-        self.ctrl.click_at(*position)
-
-        random_sleep(1)
-
         # 选择 final 精灵
-        if not self.skill.select_first_elf(self.elf_mgr.final_elf):
-            return False
+        # FIXME: 没生效
+        pos = self.ctrl.find_image_with_timeout(
+            self.elf_mgr.final_elf.template,
+            timeout=3,
+            x0=140, y0=280, x1=560, y1=1150
+        )
+        if pos:
+            logger.info(f"选择{self.elf_mgr.final_elf.name}")
+            self.ctrl.click_at(*pos)
 
-        random_sleep(1)
+        self.ctrl.click_at(*position)
+        random_sleep(5)
+
+        # 检测敌方是否是自爆流
+
 
         return True
 
@@ -30,6 +36,6 @@ EventRegistry.register(
     event=Events.CONFIRM_LINEUPS,
     handler_cls=SelectFirstElfHandler,
     template="battle/confirm_lineups.png",
-    region=(0, 0, 2560, 1440),
-    similarity=0.8
+    region=(1118, 1215, 1461, 1356),
+    similarity=0.7
 )

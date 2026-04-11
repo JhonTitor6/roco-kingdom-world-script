@@ -2,6 +2,7 @@ from src.handlers.base_handler import Handler
 from src.context import GameContext
 from src.events import Events
 from src.registry import EventRegistry
+from src.utils import random_sleep
 
 
 class BattleEndHandler(Handler):
@@ -14,7 +15,7 @@ class BattleEndHandler(Handler):
             ctx: 游戏共享状态上下文
             position: 检测到的图像坐标
         """
-        self.ctrl.find_and_click("battle/battle_end.png")
+        self.ctrl.click_at(*position)
 
 
 EventRegistry.register(

@@ -14,13 +14,14 @@ class RetryHandler(Handler):
             ctx: 游戏共享状态上下文
             position: 检测到的图像坐标
         """
-        self.ctrl.find_and_click("battle/retry.png")
+        if ctx.enemy_self_destruct:
+            self.ctrl.find_and_click("battle/retry.png")
 
 
-EventRegistry.register(
-    event=Events.RETRY,
-    handler_cls=RetryHandler,
-    template="battle/retry.png",
-    region=(0, 0, 2560, 1440),
-    similarity=0.8
-)
+# EventRegistry.register(
+#     event=Events.RETRY,
+#     handler_cls=RetryHandler,
+#     template="battle/retry.png",
+#     region=(0, 0, 2560, 1440),
+#     similarity=0.8
+# )

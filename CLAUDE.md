@@ -37,17 +37,17 @@ main.py                  # 程序入口，调用 setup_logger() 初始化日志
 │   ├── event_dispatcher.py # 主循环（事件驱动）
 │   └── handlers/
 │       ├── base_handler.py      # Handler 基类
-│       ├── comet.py              # 彗星技能
-│       ├── defense.py            # 防御技能
-│       ├── battle_end.py         # 战斗结束
-│       ├── start_challenge.py    # 开始挑战
-│       ├── confirm.py            # 确认
-│       ├── retry.py              # 再次切磋
-│       ├── switch_elf.py          # 切换精灵
-│       ├── dots_changed.py       # 圆点变化
-│       ├── speed_check.py        # 速度检测
-│       ├── enemy_avatar.py       # 敌方精灵头像
-│       └── enemy_self_destruct.py # 敌方自爆流
+│       ├── battle_end.py        # 战斗结束（UI 过渡）
+│       ├── quit_handler.py       # 退出（根据 ctx.enemy_self_destruct 判断）
+│       ├── retry.py             # 再次切磋
+│       ├── skill_castable.py     # 技能释放 + 自爆流检测
+│       └── ...                  # 其他 handler
+
+### Handler 自动注册机制
+- `handlers/__init__.py` 通过 `importlib` 自动发现并导入所有 handler 模块
+- 每个 handler 文件底部调用 `EventRegistry.register()` 自注册
+- 新增 handler 只需创建文件并调用注册，无需手动 import
+- 排除列表：`_EXCLUDE = {"__init__", "base_handler", "error", "battle", "insufficient"}`
 ```
 
 ### SkillExecutor 方法
@@ -56,6 +56,9 @@ main.py                  # 程序入口，调用 setup_logger() 初始化日志
 - `escape_battle()` - 执行逃跑（点击 escape.png → confirm.png）
 - `switch_to_elf(elf)` - 切换精灵
 - `press_energy()` - 聚能
+
+### GameContext 关键字段
+- `enemy_self_destruct` - 敌方是否为自爆流（SkillCastableHandler 写入，跨 handler 共享）
 
 ### 重要初始化
 - `main.py` 必须调用 `setup_logger()` 启用日志文件输出
@@ -69,6 +72,13 @@ main.py                  # 程序入口，调用 setup_logger() 初始化日志
 - `handlers/error.py` - 旧错误 Handler
 
 ## 核心模块说明
+
+### 战斗结束流程（重要：battle_end → retry/quit 解耦）
+
+- **battle_end**：纯 UI 过渡事件，点击后切换到 retry + quit 共存画面
+- **retry / quit**：共存的两个退出选项，retry = 再次切磋（自爆流），quit = 退出（其他情况）
+- **自爆流判断**：SkillCastableHandler 在战斗过程中检测，结果写入 `ctx.enemy_self_destruct`，各 handler 自行判断
+- **关键约束**：BattleEndHandler 不含任何业务判断，业务逻辑分散在各退出 handler 中
 
 ### 战斗流程
 1. `run_entry_flow()` - 进入战斗：点击开始挑战 → 检查精灵不足弹窗 → 选择首发 → 确认 → 等待战斗开始
@@ -103,12 +113,42 @@ main.py                  # 程序入口，调用 setup_logger() 初始化日志
 - **测试用例必须调用真实代码**：测试用例应调用实际的项目模块（如 `win_util.image.ImageFinder.bg_find_pic_all`），而非在测试文件中重新实现相同的匹配逻辑
 - 禁止在测试文件中重复实现已存在的功能代码，确保测试验证的是真实代码流程
 
+## 行为准则
+
+- **先自己找问题，再提问**：当用户描述问题时，先主动阅读相关代码、排查可能原因、尝试分析，不要在未进行任何分析的情况下直接向用户提问。确实无法解决时再提问，并说明已尝试的排查思路和结论
+
+## 代码规范
+
+### 禁止使用 dict 表示业务实体
+- **必须使用类替代 dict**：如 `Elf` 类替代精灵 dict
+- **类属性、参数、返回值必须声明类型**
+- 配置数据从 dict 解析后应转换为类型对象
+
+### Elf 类规范
+```python
+class Elf:
+    """精灵数据类"""
+    name: str
+    templates: List[str]
+    role: str
+    switch_sleep: Optional[int]
+
+    def __init__(self, name: str, templates: str | List[str], role: str, switch_sleep: Optional[int] = None):
+        self.name = name
+        self.templates = [templates] if isinstance(templates, str) else templates
+        self.role = role
+        self.switch_sleep = switch_sleep
+
+    @property
+    def template(self) -> str:
+        """获取第一个模板路径（兼容接口）"""
+        return self.templates[0]
+```
+
 ## 注意事项
 
 - 中文路径截图读取：`PIL.Image.open()` + `cv2.cvtColor()`，不用 `cv2.imread`
 - 后台点击不生效时使用前台点击 `left_click`
-- 弹窗确认按钮点击 `confirm.png` 模板位置，而非弹窗本身
-- 精灵面板切换无明确图标，用左侧区域(x<600)精灵头像检测替代
 - `setup_logger()` 只在 `main.py` 中调用一次，不要在模块中重复初始化
 
 ## 重要

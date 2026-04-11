@@ -106,13 +106,13 @@ class ScreenCapture:
             raise ValueError("请在初始化时传入 hwnd 或 env 参数")
 
         client_rect = win32gui.GetClientRect(self.hwnd)
-        client_width = client_rect[2] - client_rect[0] + 8
-        client_height = client_rect[3] - client_rect[1] + 31
+        client_width = client_rect[2] - client_rect[0]
+        client_height = client_rect[3] - client_rect[1]
 
-        x0 = max(x0, client_rect[0]) + 8
-        y0 = max(y0, client_rect[1]) + 31
-        x1 = min(x1 + 8, client_width)
-        y1 = min(y1 + 31, client_height)
+        x0 = max(x0, client_rect[0])
+        y0 = max(y0, client_rect[1])
+        x1 = min(x1, client_width)
+        y1 = min(y1, client_height)
 
         if x0 >= x1 or y0 >= y1:
             raise ValueError(f"无效区域: ({x0}, {y0}) - ({x1}, {y1})")

@@ -4,6 +4,7 @@ from typing import Union, List
 class Events(Enum):
     """事件枚举"""
     # 技能相关
+    SKILL_CASTABLE = "skill_castable"  # 可释放技能（彗星/防御）
     COMET_APPEARED = "comet_appeared"
     DEFENSE_APPEARED = "defense_appeared"
 
@@ -12,6 +13,7 @@ class Events(Enum):
     START_CHALLENGE = "start_challenge"
     CONFIRM_LINEUPS = "confirm_lineups"
     RETRY = "retry"
+    QUIT = "quit"
     CONFIRM = "confirm"
 
     # 精灵相关

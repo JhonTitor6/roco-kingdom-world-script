@@ -32,13 +32,15 @@ class EventDetector:
         """全量检测所有事件
 
         Returns:
-            检测到的事件列表（包含坐标）
+            检测到的事件列表（包含坐标），按优先级排序（priority 小的先处理）
         """
         detected = []
         for event, cfg in self.event_configs.items():
             pos = self._match_image(event, cfg)
             if pos is not None and pos != (-1, -1):
                 detected.append(DetectedEvent(event=event, position=pos))
+        # 按 priority 排序，None 视为最低优先级（放最后）
+        detected.sort(key=lambda e: self.event_configs[e.event].priority if self.event_configs[e.event].priority is not None else float('inf'))
         return detected
 
     def _match_image(self, event: Events, cfg: EventConfig) -> Optional[Tuple[int, int]]:

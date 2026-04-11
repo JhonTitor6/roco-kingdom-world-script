@@ -1,6 +1,6 @@
 [project]
 name = "roco-kingdom-script"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
     "win-util @ file:///F:/Users/56440/PythonProjects/roco-kingdom-world-script/win_util",
     "loguru>=0.7.0",

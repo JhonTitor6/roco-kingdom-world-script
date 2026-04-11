@@ -22,6 +22,7 @@ class GameContext:
     slower: bool = False
     my_inactive: int = 0
     enemy_inactive: int = 0
+    enemy_self_destruct: bool = False
 
     def set_slower(self, value: bool) -> None:
         """设置 SLOWER 流程标记"""
@@ -54,3 +55,10 @@ class GameContext:
     def skill_executor(self):
         """获取 skill_executor 引用"""
         return self.dispatcher.skill_executor
+
+    def reset(self) -> None:
+        """重置所有战斗状态（每场新战斗开始时调用）"""
+        self.slower = False
+        self.my_inactive = 0
+        self.enemy_inactive = 0
+        self.enemy_self_destruct = False
