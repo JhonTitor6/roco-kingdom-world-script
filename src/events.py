@@ -10,6 +10,7 @@ class Events(Enum):
     # 战斗流程
     BATTLE_END = "battle_end"
     START_CHALLENGE = "start_challenge"
+    CONFIRM_LINEUPS = "confirm_lineups"
     RETRY = "retry"
     CONFIRM = "confirm"
 

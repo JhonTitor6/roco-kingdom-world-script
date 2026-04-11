@@ -87,7 +87,7 @@ git commit -m "feat: 添加事件枚举定义"
 """事件处理器包"""
 from src.handlers.base_handler import Handler
 from src.handlers.start_challenge import StartChallengeHandler
-from src.handlers.select_elf import SelectElfHandler
+from src.handlers.select_first_elf import SelectFirstElfHandler
 from src.handlers.confirm import ConfirmHandler
 from src.handlers.battle import BattleHandler
 from src.handlers.battle_end import BattleEndHandler
@@ -97,7 +97,7 @@ from src.handlers.error import ErrorHandler
 __all__ = [
     "Handler",
     "StartChallengeHandler",
-    "SelectElfHandler",
+    "SelectFirstElfHandler",
     "ConfirmHandler",
     "BattleHandler",
     "BattleEndHandler",
@@ -686,7 +686,7 @@ git commit -m "feat: 添加 ErrorHandler"
 from src.state_machine import BattleState
 from src.handlers import (
     StartChallengeHandler,
-    SelectElfHandler,
+    SelectFirstElfHandler,
     ConfirmHandler,
     BattleHandler,
     BattleEndHandler,
@@ -694,11 +694,10 @@ from src.handlers import (
     ErrorHandler,
 )
 
-
 # 状态到处理器的映射
 HANDLERS = {
     BattleState.START_CHALLENGE: StartChallengeHandler,
-    BattleState.SELECT_FIRST: SelectElfHandler,
+    BattleState.SELECT_FIRST: SelectFirstElfHandler,
     BattleState.CONFIRM_FIRST: ConfirmHandler,
     BattleState.BATTLE_START: BattleHandler,
     BattleState.SPEED_CHECK: BattleHandler,

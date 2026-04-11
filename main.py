@@ -44,6 +44,7 @@ def main():
         ConfirmHandler,
         RetryHandler,
         SwitchElfHandler,
+        SelectFirstElfHandler,
         DotsChangedHandler,
         EnemySelfDestructHandler,
     )

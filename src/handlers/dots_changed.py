@@ -19,16 +19,18 @@ class DotsChangedHandler(Handler):
             position: 检测到的图像坐标
         """
         # 统计我方 active dot
-        my_active = self.ctrl.find_images_all(
-            "dots/dot_active.png",
-            x0=141, y0=132, x1=329, y1=166
+        my_inactive = self.ctrl.find_images_all(
+            "dots/dot_inactive.png",
+            x0=141, y0=132, x1=329, y1=166,
+            similarity=0.7
         )
         # 统计敌方 inactive dot
         enemy_inactive = self.ctrl.find_images_all(
             "dots/dot_inactive.png",
-            x0=2300, y0=132, x1=2490, y1=166
+            x0=2300, y0=132, x1=2490, y1=166,
+            similarity=0.7
         )
-        ctx.update_inactive(len(my_active), len(enemy_inactive))
+        ctx.update_inactive(len(my_inactive), len(enemy_inactive))
 
         # 基于 inactive dot 数量判断速度优势
         # 如果我方已有 inactive 且敌方无 inactive，说明敌方更快
@@ -44,5 +46,5 @@ EventRegistry.register(
     handler_cls=DotsChangedHandler,
     template=["dots/dot_active.png", "dots/dot_inactive.png"],
     region=(140, 100, 2490, 170),
-    similarity=0.8
+    similarity=0.7
 )

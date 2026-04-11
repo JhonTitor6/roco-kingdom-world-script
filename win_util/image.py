@@ -367,14 +367,22 @@ class ImageFinder:
             if roi.size == 0:
                 continue
 
-            # ---------- 颜色相似度 ----------
+            # ---------- 颜色相似度（直方图比较） ----------
             tpl_hsv = cv2.cvtColor(small_img, cv2.COLOR_BGR2HSV)
             roi_hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
 
-            color_diff = np.linalg.norm(
-                tpl_hsv.mean(axis=(0, 1)) - roi_hsv.mean(axis=(0, 1))
-            )
-            color_score = max(0.0, 1.0 - color_diff / 180.0)
+            # 计算 H 通道直方图（色相）
+            tpl_hist_h = cv2.calcHist([tpl_hsv], [0], None, [180], [0, 180])
+            roi_hist_h = cv2.calcHist([roi_hsv], [0], None, [180], [0, 180])
+
+            # 归一化直方图
+            cv2.normalize(tpl_hist_h, tpl_hist_h, 0, 1, cv2.NORM_MINMAX)
+            cv2.normalize(roi_hist_h, roi_hist_h, 0, 1, cv2.NORM_MINMAX)
+
+            # 比较直方图（BHATTACHARYYA 距离：0=相同，1=完全不同）
+            hist_dist = cv2.compareHist(tpl_hist_h, roi_hist_h, cv2.HISTCMP_BHATTACHARYYA)
+            # 转换为相似度（0=完全不同，1=相同）
+            color_score = max(0.0, 1.0 - hist_dist)
 
             # ---------- 合成相似度 ----------
             gray_score = result[pt[1], pt[0]]

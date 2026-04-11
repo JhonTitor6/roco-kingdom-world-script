@@ -99,6 +99,10 @@ main.py                  # 程序入口，调用 setup_logger() 初始化日志
 - `tests/integration/` - 集成测试，使用真实游戏截图验证
 - `tests/unit/` - 单元测试
 
+### 测试要求
+- **测试用例必须调用真实代码**：测试用例应调用实际的项目模块（如 `win_util.image.ImageFinder.bg_find_pic_all`），而非在测试文件中重新实现相同的匹配逻辑
+- 禁止在测试文件中重复实现已存在的功能代码，确保测试验证的是真实代码流程
+
 ## 注意事项
 
 - 中文路径截图读取：`PIL.Image.open()` + `cv2.cvtColor()`，不用 `cv2.imread`

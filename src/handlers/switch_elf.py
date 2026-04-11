@@ -7,7 +7,7 @@ from src.registry import EventRegistry
 class SwitchElfHandler(Handler):
     """切换精灵处理器"""
     CONFIRM_POS = 1543, 956
-    ELF_REGION = (24, 327, 550, 1200)
+    ELF_REGION = (250, 327, 550, 1200)
 
     def _switch_to_elf(self, elf_template: str) -> bool:
         """切换到指定精灵
@@ -58,6 +58,6 @@ EventRegistry.register(
     event=Events.SWITCH_ELF,
     handler_cls=SwitchElfHandler,
     template=["elves/tree3.png", "elves/otter2.png", "elves/pig3.png", "elves/scepter3.png"],
-    region=(24, 327, 550, 1200),
-    similarity=0.7
+    region=SwitchElfHandler.ELF_REGION,
+    similarity=0.8
 )
