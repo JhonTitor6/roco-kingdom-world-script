@@ -19,6 +19,7 @@ class QuitHandler(Handler):
         #     self.ctrl.click_at(*position)
 
         self.ctrl.click_at(*position)
+        self.random_sleep(1, 2)
 
 
 EventRegistry.register(

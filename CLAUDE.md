@@ -145,6 +145,61 @@ class Elf:
         return self.templates[0]
 ```
 
+## 日志分析
+
+**日志位置**：`logs/` 文件夹
+
+当出现异常或需要分析运行时状态时：
+1. 先查看 `logs/` 下的日志文件
+2. 日志包含：事件检测、技能释放、精灵切换、战斗流程等详细信息
+3. 通过日志时间戳对齐游戏截图，定位问题发生点
+
+**常用日志命令**：
+```bash
+# 查看最新日志
+ls -lt logs/
+
+# 实时跟踪日志（运行时）
+tail -f logs/roco_*.log
+```
+
+## 业务逻辑（核心）
+
+### 送死顺序规则（必须理解）
+- **final**：首发精灵，**最后送死**（必须存活到最后进行收割）
+- **sacrifice**：送死精灵，**先送死**用于触发敌方技能
+- **reserve**：备用精灵，sacrifice 死后补刀
+
+### 速度优势判断
+- 通过检测 **inactive dot** 出现顺序判断谁先行动
+- inactive dot 先出现在我方区域 → 我方先手（faster_flow）
+- inactive dot 先出现在敌方区域 → 敌方先手（slower_flow）
+
+### 自爆流检测与处理
+- SkillCastableHandler 检测敌方是否释放自爆技能（comet）
+- 检测到自爆 → `ctx.enemy_self_destruct = True`
+- 自爆流：点击 retry（再次切磋）继续打
+- 非自爆流：点击 quit（退出重开）
+
+### 完整战斗流程序列
+```
+1. run_entry_flow()        # 进入战斗
+   └── select_elf()        # 选择首发精灵
+2. detect_speed_advantage()# 检测速度优势
+3a. faster_flow()          # 我方先手
+   ├── switch_to(sacrifice)
+   ├── sacrifice 送死（触发敌方技能）
+   └── switch_to(final) → final 收割
+3b. slower_flow()          # 敌方先手
+   ├── switch_to(final)
+   ├── final 站场骗技能
+   ├── switch_to(sacrifice) → sacrifice 收割
+   └── switch_to(reserve) → reserve 补刀（如果需要）
+4. SkillCastableHandler 实时检测敌方自爆
+5. handle_battle_end()     # 战斗结束
+6. ctx.enemy_self_destruct 决定 → retry 或 quit
+```
+
 ## 注意事项
 
 - 中文路径截图读取：`PIL.Image.open()` + `cv2.cvtColor()`，不用 `cv2.imread`

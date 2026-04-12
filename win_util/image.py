@@ -295,12 +295,8 @@ class ImageFinder:
         self.update_screenshot_cache()  # 第一次调用可能会失败，但会设置 screenshot_cache
 
     def update_screenshot_cache(self):
-        try:
-            self.screenshot_cache = self.screenshot_capture.capture_window_region()
-            return self.screenshot_cache
-        except Exception as e:
-            logger.exception(f"更新截图缓存失败: {e}")
-            return self.screenshot_cache
+        self.screenshot_cache = self.screenshot_capture.capture_window_region()
+        return self.screenshot_cache
 
     def crop_screenshot_cache(self, x0=0, y0=0, x1=99999, y1=99999):
         """从截图缓存中裁剪指定区域"""
