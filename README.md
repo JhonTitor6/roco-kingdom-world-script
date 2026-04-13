@@ -6,8 +6,8 @@
 基于 OpenCV 图像识别的游戏战斗自动化工具，专为洛克王国 PC 版"闪耀大赛"刷金币场景设计。
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://python.org)
-[![Platform](https://img.shields.io/badge/Platform-Windows-green.svg)
-[![OpenCV](https://img.shields.io/badge/OpenCV-Template%20Matching-red.svg)
+![Platform](https://img.shields.io/badge/Platform-Windows-green.svg)
+![OpenCV](https://img.shields.io/badge/OpenCV-Template%20Matching-red.svg)
 
 ## 功能特性
 
